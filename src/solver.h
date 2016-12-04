@@ -13,13 +13,16 @@ extern "C" {
 #ifndef NUM_THREADS
 #define NUM_THREADS 4
 #endif //NUM_THREADS
+#ifndef DIM 
+#define DIM  1
+#endif
 
 #include "transform.h"
 
 class Solver : public Space_trans, public SO3_trans
 {
   public:
-    Solver(int, int, int,double,double,double,double,double);
+    Solver(int, int, int[],double,double,double,double,double[]);
     Solver();
     ~Solver();
 
@@ -30,7 +33,7 @@ class Solver : public Space_trans, public SO3_trans
     double * hist_backward;
 
     double volume;
-    double domain[1];
+    double domain[DIM];
 
     fftw_complex * matrix;
     fftw_complex * matrix1;

@@ -1,40 +1,50 @@
 #include <iostream>
 #include <cstdlib>
 #include <cstdio>
+#include <string>
 #include "iterator.hpp"
+#include "Config.h"
+
+#ifndef DIM
+#define DIM 1
+#endif
 
 int main(int argc, char * argv[])
 {
-  if(argc < 7)
+  if(argc < 2)
   {
-    std::cout<<"./main n_step bw m alpha beta kappa tau chiN domain."<<std::endl;
+    std::cout<<"USE: ./main <path to config file>."<<std::endl;
     return 0;
   }
-  /*    int n_step = atoi(argv[1]); */
-  /*    int bw = atoi(argv[2]); */
-  /*    int m = atoi(argv[3]); */
-     double alpha = atof(argv[1]);
-     double beta = atof(argv[2]);
-     double kappa = atof(argv[3]);
-     double tau = atof(argv[4]);
-     double chiN = atof(argv[5]);
-     double domain = atof(argv[6]);
+  Config configSettings(argv[1]);
+     double alpha = configSettings.Read<double>("alpha");
+     double beta = configSettings.Read<double>("beta");
+     double kappa = configSettings.Read<double>("kappa");
+     double tau = configSettings.Read<double>("tau");
+     double chiN = configSettings.Read<double>("chiN");
+     double domain[DIM];
+     domain[0] = configSettings.Read<double>("domain0");
+     domain[1] = configSettings.Read<double>("domain1");
+     int n = configSettings.Read<int>("Steps_on_chain");
+     int bw = configSettings.Read<int>("Band_width");
+     int m[DIM];
+     m[0] = configSettings.Read<int>("Grid_Size_x");
+     m[1] = configSettings.Read<int>("Grid_Size_y");
 
-    char filename[] = "./data/transoutput_512_2_2_30_15_6_5";
-    char transfilename[] = "./data/transoutput_512_2_2_40_20_6_5";
-    char pdfname[] = "./data/pdf_512_2_2_40_20_6_5";
-    char pdftransname[] = "./data/pdftrans_512_2_2_40_20_6_5";
+     std::string output_filename = configSettings.Read<std::string>("Output_filename");
+     std::string input_filename = configSettings.Read<std::string>("Input_filename");
+
 
     void (Iterator::*fp)();
     void (Iterator::*fp2)();
     fp = &Iterator::update_field;
     fp2 = &Iterator::delta_mu;
-    Iterator test(400,8,512,alpha,beta,kappa,tau,chiN,domain);
+    Iterator test(n,bw,m,alpha,beta,kappa,tau,chiN,domain);
     Iterator * obp=&test;
 
-    test.read_data(filename);
+    test.read_data(input_filename);
 
-    /* Picard pc; */
+    Picard pc;
     SteepD sd;
     Anderson ad;
 
@@ -43,19 +53,16 @@ int main(int argc, char * argv[])
 
     sd.solve(obp,fp2,test.mu,test.dmu,test.md*2,50);
     test.tensor();
-    test.save_data(transfilename);
+    test.save_data(output_filename);
 
     sd.solve(obp,fp2,test.mu,test.dmu,test.md*2,50);
     test.tensor();
-    test.save_data(transfilename);
+    test.save_data(output_filename);
 
     sd.solve(obp,fp2,test.mu,test.dmu,test.md*2,50);
     test.tensor();
-    test.save_data(transfilename);
+    test.save_data(output_filename);
 
-    sd.solve(obp,fp2,test.mu,test.dmu,test.md*2,50);
-    test.tensor();
-    test.save_data(transfilename);
 
     /* ad.solve(obp,fp,test.field,test.md*2,20); */
     /* test.tensor(); */

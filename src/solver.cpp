@@ -38,7 +38,7 @@ double timer(void) {
 }
 
 
-Solver::Solver(int ns, int bw1, int m1,double alpha0, double beta0, double kappa0, double tau0, double domain0):
+Solver::Solver(int ns, int bw1, int m1[],double alpha0, double beta0, double kappa0, double tau0, double domain0[]):
   Space_trans(bw1,m1),SO3_trans(bw1,m1),Data(bw1,m1),n_step(ns),
   tau(tau0),alpha(alpha0),beta(beta0),kappa(kappa0)
 {
@@ -56,8 +56,9 @@ Solver::Solver(int ns, int bw1, int m1,double alpha0, double beta0, double kappa
   matrix = (fftw_complex *)fftw_malloc(sizeof(fftw_complex)*totalCoeffs_so3(bw));
   matrix1 = (fftw_complex *)fftw_malloc(sizeof(fftw_complex)*totalCoeffs_so3(bw));
   getmatrix(bw,alpha,beta,kappa,tau,gamma, dt,matrix,matrix1);
-  
-  domain[0] = domain0;
+
+  for(int i = 0; i<DIM; i++)
+    domain[i] = domain0[i];
 }
 
 void Solver::init_data()
@@ -91,49 +92,14 @@ void Solver::onestep(double * field)
 
   etime = timer();
   constant(dt_gamma0_2, field);
-  etime2 = etime;
-  etime = timer();
-  //std::cout<<"const: "<<etime-etime2<<std::endl;
-
   for_space();
-  etime2 = etime;
-  etime = timer();
-  //std::cout<<"for space: "<<etime-etime2<<std::endl;
-
   gradient(dt_gamma0_2);
-  etime2 = etime;
-  etime = timer();
-  //std::cout<<"grad: "<<etime-etime2<<std::endl;
-
   for_so3();
-  etime2 = etime;
-  etime = timer();
-  //std::cout<<"for so3: "<<etime-etime2<<std::endl;
-
   laplace(dt_gamma0);
-  etime2 = etime;
-  etime = timer();
-  //std::cout<<"laplace: " << etime-etime2<<std::endl;
-
   inv_so3();
-  etime2 = etime;
-  etime = timer();
-  //std::cout<<"inv so3: "<<etime-etime2<<std::endl;
-
   gradient(dt_gamma0_2);
-  etime2 = etime;
-  etime = timer();
-  //std::cout<<"grad: "<<etime-etime2<<std::endl;
-
   inv_space();
-  etime2 = etime;
-  etime = timer();
-  //std::cout<<"inv space: "<<etime-etime2<<std::endl;
-
   constant(dt_gamma0_2, field);
-  etime2 = etime;
-  etime = timer();
-  //std::cout<<"const: "<<etime-etime2<<std::endl;
 
 
   constant(dt_gamma1_2, field);
@@ -180,32 +146,33 @@ void Solver::constant(fftw_complex dt,double * field)
 void Solver::gradient(fftw_complex dt)
 {
 #pragma omp parallel for num_threads(NUM_THREADS)
-    for(int i=0; i<md; i++)
+    for(int i=0; i<m[0]; i++)
     {
-        int index2 = (i+m/2)%m-m/2;
+      for(int i1 = 0; i1<m[1]; i1++){
+        int index0 = (i+m[0]/2)%m[0]-m[0]/2;
+        int index1 = (i+m[1]/2)%m[1]-m[1]/2;
         for(int j = 0; j<n; j++)
         {
-            double tmp = -cos(M_PI*(2*j+1)/4./bw)*2.*M_PI/domain[0]*dt[0];
-            double tmp1 = -cos(M_PI*(2*j+1)/4./bw)*2.*M_PI/domain[0]*dt[1];
-            double co = cos(index2*tmp);
-            double si = sin(index2*tmp);
-            double ex = exp(-tmp1*index2);
-            for(int k = 0; k<n; k++)
+          for(int k = 0; k<n; k++)
+          {
+          double tmp00 = -sin(M_PI*(2*j+1)/4./bw)*sin(2*M_PI*k/n)*2.*M_PI/domain[0]*dt[0];
+          double tmp01 = -sin(M_PI*(2*j+1)/4./bw)*sin(2*M_PI*k/n)*2.*M_PI/domain[0]*dt[1];
+          double tmp10 = -sin(M_PI*(2*j+1)/4./bw)*cos(2*M_PI*k/n)*2.*M_PI/domain[1]*dt[0];
+          double tmp11 = -sin(M_PI*(2*j+1)/4./bw)*cos(2*M_PI*k/n)*2.*M_PI/domain[1]*dt[1];
+          double co = cos(index0*tmp00+index1*tmp10);
+          double si = sin(index0*tmp00+index1*tmp10);
+          double ex = exp(-tmp01*index0-tmp11*index1);
+            for(int l = 0; l<n; l++)
             {
-                //double tmp = -sin(M_PI*(2*j+1)/4./bw)*sin(2*M_PI*k/n)*2.*M_PI/domain[0]*dt[0];
-                //double tmp1 = -sin(M_PI*(2*j+1)/4./bw)*sin(2*M_PI*k/n)*2.*M_PI/domain[0]*dt[1];
-                //double tmp = -sin(M_PI*(2*j+1)/4./bw)*cos(2*M_PI*k/n)*2.*M_PI/domain[0]*dt[0];
-                //double tmp1 = -sin(M_PI*(2*j+1)/4./bw)*cos(2*M_PI*k/n)*2.*M_PI/domain[0]*dt[1];
-                for(int l = 0; l<n; l++)
-                {
-                    int index = i*n3+n*n*j+n*k+l;
-                    double real = realdata[index][0];
-                    double imag = realdata[index][1];
-                    realdata[index][0] = (co*real - si*imag)*ex;
-                    realdata[index][1] = (co*imag + si*real)*ex;
-                }
+              int index = i*n3+n*n*j+n*k+l;
+              double real = realdata[index][0];
+              double imag = realdata[index][1];
+              realdata[index][0] = (co*real - si*imag)*ex;
+              realdata[index][1] = (co*imag + si*real)*ex;
             }
+          }
         }
+      }
     }
     return;
 }

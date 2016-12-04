@@ -10,14 +10,18 @@ extern "C" {
 #ifdef __cplusplus
 }
 #endif //__cplusplus
+#ifndef DIM 
+#define DIM 1
+#endif
 
 class Data 
 {
   public:
-    int bw, n, n3, m, md, n_coeff;
+    int bw, n, n3, md, n_coeff;
+    int m[DIM];
     fftw_complex * realdata;
     fftw_complex * spectdata;
-    Data(int, int);
+    Data(int, int []);
     virtual ~Data();
 };
 
@@ -28,7 +32,7 @@ class Space_trans:virtual public Data
     void for_space();
     void inv_space();
 
-    Space_trans(int, int);
+    Space_trans(int, int[]);
     ~Space_trans();
 };
 
@@ -37,7 +41,7 @@ class SO3_trans : virtual public Data
   public:
     void for_so3();
     void inv_so3();
-    SO3_trans(int, int);
+    SO3_trans(int, int[]);
     ~SO3_trans();
     double * weights;
   private:

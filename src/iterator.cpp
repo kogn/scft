@@ -7,10 +7,14 @@
 #define NUM_THREADS 4
 #endif //NUM_THREADS
 
+#ifndef DIM 
+#define DIM 1
+#endif
 
 
-Iterator::Iterator(int ns, int bw1, int m1, double alpha0, double beta0, double kappa0, 
-    double tau0, double chiN0,double domain0):
+
+Iterator::Iterator(int ns, int bw1, int m1[], double alpha0, double beta0, double kappa0, 
+    double tau0, double chiN0,double domain0[]):
   Solver(ns,bw1,m1,alpha0,beta0,kappa0,tau0,domain0),Data(bw1,m1),chiN(chiN0)
 {
   mu= (double *)malloc(sizeof(double)*md*2);
@@ -28,12 +32,26 @@ Iterator::Iterator(int ns, int bw1, int m1, double alpha0, double beta0, double 
   f_A = (double *)malloc(sizeof(double)*md*n3);
   f_B = (double *)malloc(sizeof(double)*md*n3);
 
-  for(int i = 0; i<md; i++)
+  if(DIM == 1)
   {
-    mu[i] = -2*cos(2*M_PI*i/md);
-    mu[i+md] = -mu[i];
-    field[i] = mu[i] - mu[i+md];
-    field[i+md] = mu[i] + mu[i+md];
+    for(int i = 0; i<md; i++)
+    {
+      mu[i] = -2*cos(2*M_PI*i/md);
+      mu[i+md] = -mu[i];
+      field[i] = mu[i] - mu[i+md];
+      field[i+md] = mu[i] + mu[i+md];
+    }
+  }
+  if(DIM == 2)
+  {
+    for(int i = 0; i<m[0]; i++)
+      for(int j = 0; j<m[1]; j++)
+      {
+        mu[i*m[1]+j] = -2*cos(2*M_PI*i/m[0]) + 0.2*cos(2*M_PI*j/m[1]);
+        mu[i*m[1]+j+md] = -mu[i*m[1]+j];
+        field[i*m[1]+j] = mu[i*m[1]+j] - mu[i*m[1]+j+md];
+        field[i*m[1]+j+md] = mu[i*m[1]+j] + mu[i*m[1]+j+md];
+      }
   }
 }
 
@@ -75,7 +93,7 @@ double Iterator::ptnfn(int s=0)
     }
     q += tmp1;
   }
-  q = q*bw/(m*n3);
+  q = q*bw/(md*n3);
   return q;
 }
 void Iterator::pdf(double * func)
@@ -87,7 +105,7 @@ void Iterator::pdf(double * func)
     tmp = dt/(8.*M_PI*M_PI*Q_B);
 
 #pragma omp parallel for num_threads(NUM_THREADS)
-  for(int i = 0; i<m; i++)
+  for(int i = 0; i<md; i++)
     for(int j = 0; j<n; j++)
       for(int k = 0; k<n; k++)
         for(int kk = 0; kk<n; kk++)
@@ -254,29 +272,29 @@ void Iterator::delta_mu()
   return;
 }
 
-void Iterator::save_pdf(char * filename){
-  std::ofstream file(filename);
-  for(int i = 0; i<=m; i++)
+void Iterator::save_pdf(std::string filename){
+  std::ofstream file(filename.c_str());
+  for(int i = 0; i<=md; i++)
     for(int j = -1; j<=n; j++)
       for(int k = 0; k<=n; k++)
         for(int kk = 0; kk<=n; kk++)
         {
           int index;
           if( j == -1)
-            index = ((kk+n/2)%n)+n*((k+n/2)%n)+(i%m)*n3;
+            index = ((kk+n/2)%n)+n*((k+n/2)%n)+(i%md)*n3;
           else if(j == n)
-            index = ((kk+n/2)%n)+n*((k+n/2)%n)+(n-1)*n*n+(i%m)*n3;
+            index = ((kk+n/2)%n)+n*((k+n/2)%n)+(n-1)*n*n+(i%md)*n3;
           else
-            index = (kk%n)+n*(k%n)+(j%n)*n*n+(i%m)*n3;
+            index = (kk%n)+n*(k%n)+(j%n)*n*n+(i%md)*n3;
           file<<f_B[index]<<std::endl;
         }
   file.close();
   return;
 }
 
-void Iterator::read_pdf(char * filename){
-  std::ifstream file(filename);
-  for(int i = 0; i<m; i++)
+void Iterator::read_pdf(std::string filename){
+  std::ifstream file(filename.c_str());
+  for(int i = 0; i<md; i++)
     for(int j = 0; j<n; j++)
       for(int k = 0; k<n; k++)
         for(int kk = 0; kk<n; kk++)
@@ -287,9 +305,9 @@ void Iterator::read_pdf(char * filename){
   file.close();
   return;
 }
-void Iterator::save_data(char * filename)
+void Iterator::save_data(std::string filename)
 {
-  std::ofstream file(filename);
+  std::ofstream file(filename.c_str());
   for(int i = 0; i<md; i++)
   {
     file<<phi_A[i]<<" "<<phi_B[i]<<" "<<field[i]<<" "<<field[i+md];
@@ -302,9 +320,9 @@ void Iterator::save_data(char * filename)
   file.close();
   return;
 }
-void Iterator::read_data(const char s[])
+void Iterator::read_data(std::string s)
 {
-  std::ifstream file(s);
+  std::ifstream file(s.c_str());
   double tmp;
   for(int i = 0; i<md; i++)
   {

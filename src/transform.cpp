@@ -21,7 +21,9 @@ extern "C" {
 }
 #endif //__cplusplus
 
+#ifndef DIM
 #define DIM 1
+#endif
 
 #ifndef NUM_THREADS
 #define NUM_THREADS 4
@@ -29,12 +31,17 @@ extern "C" {
 
 #include "transform.h"
 
-Data::Data(int bw1, int m1):bw(bw1),m(m1)
+Data::Data(int bw1, int m1[]):bw(bw1)
 {
+  for(int i = 0; i<DIM; i++){
+    m[i] = m1[i];
+  }
   n_coeff = totalCoeffs_so3(bw);
   n = bw*2;
   n3 = n*n*n;
-  md = pow(m,DIM);
+  md = 1;
+  for(int i = 0; i<DIM; i++)
+    md *= m[i];
   realdata = (fftw_complex *)fftw_malloc(sizeof(fftw_complex)*n3*md);
   spectdata = (fftw_complex *)fftw_malloc(sizeof(fftw_complex)*n_coeff*md);
 }
@@ -45,38 +52,40 @@ Data::~Data()
   fftw_free(spectdata);
 }
 
-Space_trans::Space_trans(int bw1, int m1):Data(bw1,m1)
+Space_trans::Space_trans(int bw1, int m1[]):Data(bw1,m1)
 {
-  int na[DIM];
-  int howmany = n3;
-  int idist = 1;
-  int odist = 1;
+  fftw_iodim dims[DIM], howmany_dims[1];
   int rank = DIM;
-  int * inembed = na;
-  int * onembed = na;
-  int istride = n3;
-  int ostride = n3;
-  for(int i = 0; i < DIM; i++)
-    na[i] = m;
+  int howmany_rank = 1;
+  if(DIM == 1){
+    dims[0].n = m[0];
+    dims[0].is = n3;
+    dims[0].os = n3;
+  }
+  if(DIM == 2){
+    dims[0].n = m[0];
+    dims[0].is = n3*m[1];
+    dims[0].os = n3*m[1];
+    dims[1].n = m[1];
+    dims[1].is = n3;
+    dims[1].os = n3;
+  }
+  howmany_dims[0].n = n3;
+  howmany_dims[0].is = 1;
+  howmany_dims[0].os = 1;
 
   fftw_init_threads();
   fftw_plan_with_nthreads(NUM_THREADS);
 
-  pi = fftw_plan_many_dft( rank, na, howmany,
-      realdata , inembed,
-      istride, idist,
-      realdata , onembed,
-      ostride, odist,
-      FFTW_BACKWARD, FFTW_MEASURE );
-      //FFTW_BACKWARD, FFTW_PATIENT);
+  pf = fftw_plan_guru_dft( rank, dims,
+      howmany_rank, howmany_dims,
+      realdata, realdata,
+      FFTW_FORWARD, FFTW_ESTIMATE );
 
-  pf = fftw_plan_many_dft( rank, na, howmany,
-      realdata , inembed,
-      istride, idist,
-      realdata, onembed,
-      ostride, odist,
-      FFTW_FORWARD, FFTW_MEASURE );
-      //FFTW_FORWARD, FFTW_PATIENT);
+  pi = fftw_plan_guru_dft( rank, dims,
+      howmany_rank, howmany_dims,
+      realdata, realdata,
+      FFTW_BACKWARD, FFTW_ESTIMATE );
   fftw_plan_with_nthreads(1);
 }
 
@@ -104,7 +113,7 @@ void Space_trans::inv_space()
   return;
 }
 
-SO3_trans::SO3_trans(int bw1, int m1):Data(bw1,m1)
+SO3_trans::SO3_trans(int bw1, int m1[]):Data(bw1,m1)
 {
   workspace_cx =(fftw_complex**)malloc(sizeof(fftw_complex*)*NUM_THREADS);
   workspace_cx2=(fftw_complex**)malloc(sizeof(fftw_complex*)*NUM_THREADS);

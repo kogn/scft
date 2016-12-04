@@ -1,5 +1,6 @@
 DEBUG = 0
-MKL=0
+MKL=1
+DIM=2
 
 SRCDIR=./src/
 OBJDIR=./obj/
@@ -9,7 +10,7 @@ OPTS=-O3
 
 LDFLAGS =
 COMMON= 
-CFLAGS=  -DNUM_THREADS=4
+CFLAGS=  -DNUM_THREADS=4 -DDIM=2
 
 
 ifeq ($(DEBUG), 1)
@@ -21,7 +22,7 @@ CFLAGS+=$(OPTS)
 .PHONY: clean all
 
 VPATH=./src/
-EXEC = test_solver test_trans main
+EXEC = test_solver test_trans main test_config
 all: obj data $(EXEC)
 
 LDFLAGS += -llapacke -lsoft1
@@ -42,6 +43,9 @@ OBJS = $(patsubst %.c,%.o,$(addprefix $(OBJDIR), $(notdir $(wildcard $(SRCDIR)*.
 OBJS += $(patsubst %.cpp,%.o,$(addprefix $(OBJDIR), $(notdir $(wildcard $(SRCDIR)*.cpp))))
 DEPS = $(wildcard $(SRCDIR)*.h $(SRCDIR)*.hpp) Makefile
 
+
+test_config : test_config.cpp Config.cpp Config.h 
+	$(CXX) $(filter-out %.h,$^) -o $@
 
 main : $(filter-out $(addprefix $(OBJDIR),$(filter-out main.o,$(addsuffix .o,$(EXEC)))),$(OBJS))
 	$(CXX) $(COMMON) $(CFLAGS) $^  $(LIB) $(LDFLAGS) -o $@

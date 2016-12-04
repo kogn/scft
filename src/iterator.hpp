@@ -20,7 +20,7 @@ extern "C" {
 class Iterator : public Solver
 {
 	public:
-		Iterator(int, int, int, double, double, double, double,double,double);
+		Iterator(int, int, int[], double, double, double, double,double,double[]);
 		~Iterator();
 
 		void update_field();
@@ -41,10 +41,10 @@ class Iterator : public Solver
 
 		double chiN;
 
-		void save_data(char *);
-		void save_pdf(char *);
-        void read_pdf(char *);
-		void read_data(const char *);
+		void save_data(std::string);
+		void save_pdf(std::string);
+        void read_pdf(std::string);
+		void read_data(std::string);
 
         void density();
         void pdf(double*);
