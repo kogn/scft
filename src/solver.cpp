@@ -147,64 +147,74 @@ void Solver::constant(fftw_complex dt,double * field)
   }
   return;
 }
+#if DIM == 1
+void Solver::gradient(fftw_complex dt)
+{
+#pragma omp parallel for num_threads(NUM_THREADS)
+    for(int i=0; i<md; i++)
+    {
+        int index2 = (i+md/2)%md-md/2;
+        for(int j = 0; j<n; j++)
+        {
+            double tmp = -cos(M_PI*(2*j+1)/4./bw)*2.*M_PI/domain[0]*dt[0];
+            double tmp1 = -cos(M_PI*(2*j+1)/4./bw)*2.*M_PI/domain[0]*dt[1];
+            double co = cos(index2*tmp);
+            double si = sin(index2*tmp);
+            double ex = exp(-tmp1*index2);
+            for(int k = 0; k<n; k++)
+            {
+                //double tmp = -sin(M_PI*(2*j+1)/4./bw)*sin(2*M_PI*k/n)*2.*M_PI/domain[0]*dt[0];
+                //double tmp1 = -sin(M_PI*(2*j+1)/4./bw)*sin(2*M_PI*k/n)*2.*M_PI/domain[0]*dt[1];
+                //double tmp = -sin(M_PI*(2*j+1)/4./bw)*cos(2*M_PI*k/n)*2.*M_PI/domain[0]*dt[0];
+                //double tmp1 = -sin(M_PI*(2*j+1)/4./bw)*cos(2*M_PI*k/n)*2.*M_PI/domain[0]*dt[1];
+                for(int l = 0; l<n; l++)
+                {
+                    int index = i*n3+n*n*j+n*k+l;
+                    double real = realdata[index][0];
+                    double imag = realdata[index][1];
+                    realdata[index][0] = (co*real - si*imag)*ex;
+                    realdata[index][1] = (co*imag + si*real)*ex;
+                }
+            }
+        }
+    }
+    return;
+}
+#elif DIM == 2
 void Solver::gradient(fftw_complex dt)
 {
 #pragma omp parallel for num_threads(NUM_THREADS)
     for(int i=0; i<m[0]; i++)
     {
-      for(int i1 = 0; i1<m[1]; i1++){
-        int index0 = (i+m[0]/2)%m[0]-m[0]/2;
-        int index1 = (i+m[1]/2)%m[1]-m[1]/2;
-        for(int j = 0; j<n; j++)
-        {
-          for(int k = 0; k<n; k++)
-          {
-          double tmp00 = -sin(M_PI*(2*j+1)/4./bw)*sin(2*M_PI*k/n)*2.*M_PI/domain[0]*dt[0];
-          double tmp01 = -sin(M_PI*(2*j+1)/4./bw)*sin(2*M_PI*k/n)*2.*M_PI/domain[0]*dt[1];
-          double tmp10 = -sin(M_PI*(2*j+1)/4./bw)*cos(2*M_PI*k/n)*2.*M_PI/domain[1]*dt[0];
-          double tmp11 = -sin(M_PI*(2*j+1)/4./bw)*cos(2*M_PI*k/n)*2.*M_PI/domain[1]*dt[1];
-          double co = cos(index0*tmp00+index1*tmp10);
-          double si = sin(index0*tmp00+index1*tmp10);
-          double ex = exp(-tmp01*index0-tmp11*index1);
-            for(int l = 0; l<n; l++)
+        for(int i1 = 0; i1<m[1]; i1++){
+            int index0 = (i+m[0]/2)%m[0]-m[0]/2;
+            int index1 = (i+m[1]/2)%m[1]-m[1]/2;
+            for(int j = 0; j<n; j++)
             {
-              int index = i*n3+n*n*j+n*k+l;
-              double real = realdata[index][0];
-              double imag = realdata[index][1];
-              realdata[index][0] = (co*real - si*imag)*ex;
-              realdata[index][1] = (co*imag + si*real)*ex;
+                for(int k = 0; k<n; k++)
+                {
+                    double tmp00 = -sin(M_PI*(2*j+1)/4./bw)*sin(2*M_PI*k/n)*2.*M_PI/domain[0]*dt[0];
+                    double tmp01 = -sin(M_PI*(2*j+1)/4./bw)*sin(2*M_PI*k/n)*2.*M_PI/domain[0]*dt[1];
+                    double tmp10 = -sin(M_PI*(2*j+1)/4./bw)*cos(2*M_PI*k/n)*2.*M_PI/domain[1]*dt[0];
+                    double tmp11 = -sin(M_PI*(2*j+1)/4./bw)*cos(2*M_PI*k/n)*2.*M_PI/domain[1]*dt[1];
+                    double co = cos(index0*tmp00+index1*tmp10);
+                    double si = sin(index0*tmp00+index1*tmp10);
+                    double ex = exp(-tmp01*index0-tmp11*index1);
+                    for(int l = 0; l<n; l++)
+                    {
+                        int index = i*n3+n*n*j+n*k+l;
+                        double real = realdata[index][0];
+                        double imag = realdata[index][1];
+                        realdata[index][0] = (co*real - si*imag)*ex;
+                        realdata[index][1] = (co*imag + si*real)*ex;
+                    }
+                }
             }
-          }
         }
-      }
     }
     return;
 }
-/* void Solver::gradient(fftw_complex dt) */
-/* { */
-/* #pragma omp parallel for num_threads(NUM_THREADS) */
-/*   for(int i=0; i<md; i++) */
-/*     for(int j = 0; j<n; j++) */
-/*       for(int k = 0; k<n; k++) */
-/*       { */
-/*         double tmp = -cos(M_PI*(2*j+1)/4./bw)*2.*M_PI/domain[0]*dt[0]; */
-/*         double tmp1 = -cos(M_PI*(2*j+1)/4./bw)*2.*M_PI/domain[0]*dt[1]; */
-/*         //double tmp = -sin(M_PI*(2*j+1)/4./bw)*sin(2*M_PI*k/n)*2.*M_PI/domain[0]*dt[0]; */
-/*         //double tmp1 = -sin(M_PI*(2*j+1)/4./bw)*sin(2*M_PI*k/n)*2.*M_PI/domain[0]*dt[1]; */
-/*         //double tmp = -sin(M_PI*(2*j+1)/4./bw)*cos(2*M_PI*k/n)*2.*M_PI/domain[0]*dt[0]; */
-/*         //double tmp1 = -sin(M_PI*(2*j+1)/4./bw)*cos(2*M_PI*k/n)*2.*M_PI/domain[0]*dt[1]; */
-/*         for(int l = 0; l<n; l++) */
-/*         { */
-/*           int index = i*n3+n*n*j+n*k+l; */
-/*           double real = realdata[index][0]; */
-/*           double imag = realdata[index][1]; */
-/*           int index2 = (i+m/2)%m-m/2; */
-/*           realdata[index][0] = (cos(index2*tmp)*real - sin(index2*tmp)*imag)*exp(-tmp1*index2); */
-/*           realdata[index][1] = (cos(index2*tmp)*imag + sin(index2*tmp)*real)*exp(-tmp1*index2); */
-/*         } */
-/*       } */
-/*   return; */
-/* } */
+#endif
 
 void Solver::laplace(fftw_complex dt)
 {
