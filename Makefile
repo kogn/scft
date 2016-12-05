@@ -1,7 +1,9 @@
 DEBUG = 0
-MKL=0
+MKL=1
 DIM=2
 
+INTEL_DIR= /opt/intel/
+MATHEMATICA_DIR= /usr/local/Wolfram/Mathematica/10.3/
 SRCDIR=./src/
 OBJDIR=./obj/
 CC = gcc 
@@ -29,15 +31,15 @@ LDFLAGS += -llapacke -lsoft1
 
 ifeq ($(MKL), 1)
   CFLAGS+= -DMKL
-  COMMON += -I /usr/local/intel/mkl/include/ -I /usr/local/intel/mkl/include/fftw/
-  LIB = -L /usr/local/intel/mkl/interfaces/fftw3xc -L /usr/local/intel/mkl/lib/intel64/ \
-			 -L /usr/local/intel/compilers_and_libraries_2016.3.210/linux/compiler/lib/intel64_lin/ \
+  COMMON += -I ${INTEL_DIR}/mkl/include/ -I ${INTEL_DIR}/mkl/include/fftw/
+  LIB = -L ${INTEL_DIR}/interfaces/fftw3xc -L ${INTEL_DIR}/mkl/lib/intel64/ \
+		-L ${INTEL_DIR}/compilers_and_libraries_2016.3.210/linux/compiler/lib/intel64_lin/
   LDFLAGS += -lfftw3xc_gnu -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread
 else
   LDFLAGS += -lfftw3_omp -lfftw3 
 endif
-LIB += -L /usr/local/Wolfram/Mathematica/10.3/SystemFiles/Links/MathLink/DeveloperKit/Linux-x86-64/CompilerAdditions/ \
-	   -L/usr/local/Wolfram/Mathematica/10.3/SystemFiles/Libraries/Linux-x86-64
+LIB += -L ${MATHEMATICA_DIR}/SystemFiles/Links/MathLink/DeveloperKit/Linux-x86-64/CompilerAdditions/ \
+	   -L${MATHEMATICA_DIR}/SystemFiles/Libraries/Linux-x86-64
 
 LDFLAGS += -lopenblas  -lML64i3 -lrt  -ldl -luuid  -lm -fopenmp
 
