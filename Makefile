@@ -31,7 +31,9 @@ ifeq ($(MKL), 1)
   CFLAGS+= -DMKL
   COMMON += -I /usr/local/intel/mkl/include/ -I /usr/local/intel/mkl/include/fftw/
   LIB = -L /usr/local/intel/mkl/interfaces/fftw3xc -L /usr/local/intel/mkl/lib/intel64/ \
-			 -L /usr/local/intel/compilers_and_libraries_2016.3.210/linux/compiler/lib/intel64_lin/ -L /usr/local/Wolfram/Mathematica/10.3/SystemFiles/Links/MathLink/DeveloperKit/Linux-x86-64/CompilerAdditions/ -L/usr/local/Wolfram/Mathematica/10.3/SystemFiles/Libraries/Linux-x86-64
+			 -L /usr/local/intel/compilers_and_libraries_2016.3.210/linux/compiler/lib/intel64_lin/ \
+			 -L /usr/local/Wolfram/Mathematica/10.3/SystemFiles/Links/MathLink/DeveloperKit/Linux-x86-64/CompilerAdditions/ \
+			 -L/usr/local/Wolfram/Mathematica/10.3/SystemFiles/Libraries/Linux-x86-64
   LDFLAGS += -lfftw3xc_gnu -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread
 else
   LDFLAGS += -lfftw3_omp -lfftw3 
