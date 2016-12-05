@@ -11,28 +11,28 @@
 
 int main(int argc, char * argv[])
 {
-  if(argc < 2)
-  {
-    std::cout<<"USE: ./main <path to config file>."<<std::endl;
-    return 0;
-  }
-  Config configSettings(argv[1]);
-     double alpha = configSettings.Read<double>("alpha");
-     double beta = configSettings.Read<double>("beta");
-     double kappa = configSettings.Read<double>("kappa");
-     double tau = configSettings.Read<double>("tau");
-     double chiN = configSettings.Read<double>("chiN");
-     double domain[DIM];
-     domain[0] = configSettings.Read<double>("domain0");
-     domain[1] = configSettings.Read<double>("domain1");
-     int n = configSettings.Read<int>("Steps_on_chain");
-     int bw = configSettings.Read<int>("Band_width");
-     int m[DIM];
-     m[0] = configSettings.Read<int>("Grid_Size_x");
-     m[1] = configSettings.Read<int>("Grid_Size_y");
+    if(argc < 2)
+    {
+        std::cout<<"USE: ./main <path to config file>."<<std::endl;
+        return 0;
+    }
+    Config configSettings(argv[1]);
+    double alpha = configSettings.Read<double>("alpha");
+    double beta = configSettings.Read<double>("beta");
+    double kappa = configSettings.Read<double>("kappa");
+    double tau = configSettings.Read<double>("tau");
+    double chiN = configSettings.Read<double>("chiN");
+    double domain[DIM];
+    domain[0] = configSettings.Read<double>("domain0");
+    domain[1] = configSettings.Read<double>("domain1");
+    int n = configSettings.Read<int>("Steps_on_chain");
+    int bw = configSettings.Read<int>("Band_width");
+    int m[DIM];
+    m[0] = configSettings.Read<int>("Grid_Size_x");
+    m[1] = configSettings.Read<int>("Grid_Size_y");
 
-     std::string output_filename = configSettings.Read<std::string>("Output_filename");
-     std::string input_filename = configSettings.Read<std::string>("Input_filename");
+    std::string output_filename = configSettings.Read<std::string>("Output_filename");
+    std::string input_filename = configSettings.Read<std::string>("Input_filename");
 
 
     void (Iterator::*fp)();
@@ -42,7 +42,7 @@ int main(int argc, char * argv[])
     Iterator test(n,bw,m,alpha,beta,kappa,tau,chiN,domain);
     Iterator * obp=&test;
 
-    test.read_data(input_filename);
+    //test.read_data(input_filename);
 
     Picard pc;
     SteepD sd;

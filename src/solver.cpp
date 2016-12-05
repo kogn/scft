@@ -121,6 +121,10 @@ void Solver::onestep(double * field)
   gradient(dt_gamma0_2);
   inv_space();
   constant(dt_gamma0_2, field);
+  for(int i = 0; i<md; i++){
+      realdata[i][0] = sqrt(realdata[i][0]*realdata[i][0]+realdata[i][1]*realdata[i][1]);
+      realdata[i][1] = 0.;
+  }
 
   t += dt;
 }
