@@ -1,5 +1,5 @@
-DEBUG = 0
-MKL=j
+DEBUG = 1
+MKL=1
 DIM=2
 
 INTEL_DIR= /usr/local/intel/
@@ -38,11 +38,11 @@ ifeq ($(MKL), 1)
 else
   LDFLAGS += -lfftw3_omp -lfftw3 
 endif
-COMMON += -I ${MATHEMATICA_DIR}/SystemFiles/Links/MathLink/DeveloperKit/Linux-x86-64/CompilerAdditions/
-LIB += -L ${MATHEMATICA_DIR}/SystemFiles/Links/MathLink/DeveloperKit/Linux-x86-64/CompilerAdditions/ \
+COMMON += -I ${MATHEMATICA_DIR}/SystemFiles/Links/WSTP/DeveloperKit/Linux-x86-64/CompilerAdditions/
+LIB += -L ${MATHEMATICA_DIR}/SystemFiles/Links/WSTP/DeveloperKit/Linux-x86-64/CompilerAdditions/ \
 	   -L${MATHEMATICA_DIR}/SystemFiles/Libraries/Linux-x86-64
 
-LDFLAGS += -lopenblas  -lML64i3 -lrt  -ldl -luuid  -lm -fopenmp
+LDFLAGS += -lopenblas  -lWSTP64i4 -lrt  -ldl -luuid  -lm -fopenmp
 
 OBJS = $(patsubst %.c,%.o,$(addprefix $(OBJDIR), $(notdir $(wildcard $(SRCDIR)*.c))))
 OBJS += $(patsubst %.cpp,%.o,$(addprefix $(OBJDIR), $(notdir $(wildcard $(SRCDIR)*.cpp))))

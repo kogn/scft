@@ -19,19 +19,23 @@ extern "C" {
 #ifndef NUM_THREADS
 #define NUM_THREADS 4
 #endif //NUM_THREADS
-
-class Iterator : public Solver
+template<class TA, class TB>
+class Iterator
 {
     public:
         Iterator(int, int, int[], double, double, double, double,double,double[]);
         ~Iterator();
+        TA A;
+        TB B;
+        int md;
+        int m[DIM];
+        int n;
+        int n3;
 
         void update_field();
         void delta_mu();
 
         void print_info();
-
-        void init();
 
         void quality();
 
@@ -44,63 +48,7 @@ class Iterator : public Solver
 
         double chiN;
 
-        void save_data(std::string);
-        void save_pdf(std::string);
-        void read_pdf(std::string);
-        void read_data(std::string);
-
-        void density();
-        void pdf(double*);
-        void tensor();
-
-        double ptnfn(int);
-
-        double Q_A, Q_B;
-        double * S_A[6];
-        double * S_B[6];
-        double * phi_A, *phi_B;
-        double * f_A, *f_B;
-
 };
-
-/* class Opt */
-/* { */
-/*     public: */
-/*         std::string output_filedir; */
-/*         std::string input_filedir; */
-/*         void save_data(std::string); */
-/*         void read_data(std::string); */
-/* } */
-/* void Opt::save_data(std::string filename) */
-/* { */
-/*   std::ofstream file(filename.c_str()); */
-/*   for(int i = 0; i<md; i++) */
-/*   { */
-/*     file<<phi_A[i]<<" "<<phi_B[i]<<" "<<field[i]<<" "<<field[i+md]; */
-/*     for(int a = 0; a<6; a++) */
-/*       file<<" "<<S_A[a][i]; */
-/*     for(int a = 0; a<6; a++) */
-/*       file<<" "<<S_B[a][i]; */
-/*     file<<std::endl; */
-/*   } */
-/*   file.close(); */
-/*   return; */
-/* } */
-/* void Opt::read_data(std::string s) */
-/* { */
-/*   std::ifstream file(s.c_str()); */
-/*   double tmp; */
-/*   for(int i = 0; i<md; i++) */
-/*   { */
-/*     file>>tmp>>tmp>>field[i]>>field[i+md]; */
-/*     for(int j = 0; j<12; j++) */
-/*       file>>tmp; */
-/*     mu[i] = (field[i]+field[i+md])*0.5; */
-/*     mu[i+md] = (field[i+md]-field[i])*0.5; */
-/*   } */
-/*   file.close(); */
-/*   return; */
-/* } */
 
 static void read_data(std::string filename, double * data, int length){
     std::ifstream file(filename.c_str());
@@ -274,6 +222,139 @@ void Anderson::solve(T * ob,void (T::*func) (),double* y ,int n, int max_steps=2
     free(x);
     free(g);
     free(ls_A);
+    return;
+}
+
+
+template<class TA, class TB>
+Iterator<TA,TB>::Iterator(int ns, int bw1, int m1[], double alpha0, double beta0, 
+        double kappa0, double tau0, double chiN0,double domain0[]):
+    A(ns,bw1,m1,alpha0,beta0,kappa0,tau0,domain0),
+    B(ns,bw1,m1,alpha0,beta0,kappa0,tau0,domain0),chiN(chiN0)
+{
+    md = A.md;
+    n = A.n;
+    n3 = A.n3;
+    
+    mu= (double *)malloc(sizeof(double)*md*2);
+    dmu= (double *)malloc(sizeof(double)*md*2);
+    field = (double *)malloc(sizeof(double)*md*2);
+
+    if(DIM == 1)
+    {
+        m[0] = A.m[0];
+        for(int i = 0; i<md; i++)
+        {
+            mu[i] = -2*cos(2*M_PI*i/md);
+            mu[i+md] = -mu[i];
+            field[i] = mu[i] - mu[i+md];
+            field[i+md] = mu[i] + mu[i+md];
+        }
+    }
+    if(DIM == 2)
+    {
+        int m[2];
+        m[0] = A.m[0]; m[1] =  A.m[1];
+        for(int i = 0; i<m[0]; i++)
+            for(int j = 0; j<m[1]; j++)
+            {
+                mu[i*m[1]+j] = -.2*cos(2*M_PI*i/m[0]) + 0.2*cos(2*M_PI*j/m[1]);
+                mu[i*m[1]+j+md] = -mu[i*m[1]+j];
+                field[i*m[1]+j] = mu[i*m[1]+j] - mu[i*m[1]+j+md];
+                field[i*m[1]+j+md] = mu[i*m[1]+j] + mu[i*m[1]+j+md];
+            }
+    }
+}
+
+template<class TA, class TB>
+Iterator<TA,TB>::~Iterator()
+{
+  free(mu);
+  free(dmu);
+  free(field);
+}
+
+
+template<class TA, class TB>
+void Iterator<TA,TB>::update_field()
+{
+  A.solve_eqn(field);
+  A.Q = A.ptnfn();
+  A.pdf();
+
+  B.solve_eqn(field+md);
+  B.Q = B.ptnfn();
+  B.pdf();
+
+  A.density();
+  B.density();
+  for(int i = 0;i <md; i++)
+  {
+    double tmp;
+    tmp = (field[i] + field[i+md] - chiN)*0.5;
+    field[i] = chiN*B.phi[i]+tmp;
+    field[i+md] = chiN*A.phi[i]+tmp;
+    mu[i] = (field[i]+field[i+md])*0.5;
+    mu[i+md] = (field[i+md]-field[i])*0.5;
+  }
+  energy();
+  print_info();
+  return;
+}
+template<class TA, class TB>
+void Iterator<TA, TB>::delta_mu()
+{
+  for(int i = 0; i<md; i++)
+  {
+    field[i] = mu[i] - mu[i+md];
+    field[i+md] = mu[i] + mu[i+md];
+  }
+  A.solve_eqn(field);
+  A.Q = A.ptnfn();
+  A.pdf();
+
+  B.solve_eqn(field+md);
+  B.Q = B.ptnfn();
+  B.pdf();
+
+  A.density();
+  B.density();
+  double tmp;
+  for(int i = 0; i<md; i++)
+  {
+    dmu[i] = -(A.phi[i]+B.phi[i]-1.);
+    dmu[i+md]= B.phi[i] - A.phi[i] +2*mu[i+md]/chiN;
+  }
+  energy();
+  print_info();
+  return;
+}
+template<class TA, class TB>
+double Iterator<TA,TB>::energy()
+{
+  H = 0;
+  for(int i = 0; i<md; i++)
+  {
+    H += -mu[i] + mu[i+md]*mu[i+md]/chiN;
+  }
+  H /= md;
+  H -= (log(A.Q) + log(B.Q))/2;
+  return H;
+}
+
+
+template<class TA, class TB>
+void Iterator<TA,TB>::print_info()
+{
+    double quality= 0.;
+    for(int i = 0; i<md; i++)
+    {
+        quality += A.phi[i] + B.phi[i];
+    }
+    quality /= md;
+        std::cout<<std::endl<<"Quality = "<<quality<<"; Q_A = "<<A.Q<<
+          "; Q_B = "<<B.Q<<"; H = "
+        <<H<<std::endl;
     return;
 }
 

@@ -30,7 +30,10 @@ int main(int argc, char * argv[])
      std::string input_filename = configSettings.Read<std::string>("Input_dir");
 
 
-  Iterator test(n,bw,m,alpha,beta,kappa,tau,chiN,domain);
+  Solver test(n,bw,m,alpha,beta,kappa,tau,domain);
+  Solver test1(n,bw,m,alpha,beta,kappa,tau,domain);
+
+  //Iterator<Solver,Solver> test(n,bw,m,alpha,beta,kappa,tau,chiN,domain);
   double * field = (double *)malloc(sizeof(double)*test.md*2);
   double * mu= (double *)malloc(sizeof(double)*test.md*2);
 
@@ -56,13 +59,14 @@ int main(int argc, char * argv[])
         field[i*m[1]+j+md] = mu[i*m[1]+j] + mu[i*m[1]+j+md];
       }
   }
-
   test.solve_eqn(field);
 
-  for(int i = 0; i<= test.n_step; i++)
-    std::cout<<test.ptnfn(i)<<std::endl;
-  free(field);
-  free(mu);
+  //test.A.solve_eqn(field);
+
+  /* for(int i = 0; i<= test.A.n_step; i++) */
+  /*   std::cout<<test.A.ptnfn(i)<<std::endl; */
+  /* free(field); */
+  /* free(mu); */
 
   return 0;
 }

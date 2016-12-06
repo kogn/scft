@@ -35,12 +35,12 @@ int main(int argc, char * argv[])
     std::string input_filedir = configSettings.Read<std::string>("Input_dir");
 
 
-    void (Iterator::*fp)();
-    void (Iterator::*fp2)();
-    fp = &Iterator::update_field;
-    fp2 = &Iterator::delta_mu;
-    Iterator test(n,bw,m,alpha,beta,kappa,tau,chiN,domain);
-    Iterator * obp=&test;
+    void (Iterator<Solver,Solver>::*fp)();
+    void (Iterator<Solver,Solver>::*fp2)();
+    fp = &Iterator<Solver,Solver>::update_field;
+    fp2 = &Iterator<Solver,Solver>::delta_mu;
+    Iterator<Solver,Solver> test(n,bw,m,alpha,beta,kappa,tau,chiN,domain);
+    Iterator<Solver,Solver> * obp=&test;
 
     //test.read_data(input_filename);
 
@@ -51,17 +51,15 @@ int main(int argc, char * argv[])
     //pc.solve(obp,fp,test.field,test.md*2);
 
 
-    sd.solve(obp,fp2,test.mu,test.dmu,test.md*2,50);
-    test.tensor();
-    test.save_data(output_filedir);
+    sd.solve(obp,fp2,test.mu,test.dmu,test.md*2,20);
+    test.A.tensor();
+    //test.A.save_data(output_filedir);
 
-    sd.solve(obp,fp2,test.mu,test.dmu,test.md*2,50);
-    test.tensor();
-    test.save_data(output_filedir);
+    sd.solve(obp,fp2,test.mu,test.dmu,test.md*2,20);
+    test.A.tensor();
 
-    sd.solve(obp,fp2,test.mu,test.dmu,test.md*2,50);
-    test.tensor();
-    test.save_data(output_filedir);
+    sd.solve(obp,fp2,test.mu,test.dmu,test.md*2,20);
+    test.A.tensor();
 
 
     /* ad.solve(obp,fp,test.field,test.md*2,20); */
