@@ -26,8 +26,8 @@ int main(int argc, char * argv[])
      m[0] = configSettings.Read<int>("Grid_Size_x");
      m[1] = configSettings.Read<int>("Grid_Size_y");
 
-     std::string output_filename = configSettings.Read<std::string>("Output_filename");
-     std::string input_filename = configSettings.Read<std::string>("Input_filename");
+     std::string output_filename = configSettings.Read<std::string>("Output_dir");
+     std::string input_filename = configSettings.Read<std::string>("Input_dir");
 
 
   Iterator test(n,bw,m,alpha,beta,kappa,tau,chiN,domain);

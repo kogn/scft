@@ -31,8 +31,8 @@ int main(int argc, char * argv[])
     m[0] = configSettings.Read<int>("Grid_Size_x");
     m[1] = configSettings.Read<int>("Grid_Size_y");
 
-    std::string output_filename = configSettings.Read<std::string>("Output_filename");
-    std::string input_filename = configSettings.Read<std::string>("Input_filename");
+    std::string output_filedir = configSettings.Read<std::string>("Output_dir");
+    std::string input_filedir = configSettings.Read<std::string>("Input_dir");
 
 
     void (Iterator::*fp)();
@@ -45,7 +45,7 @@ int main(int argc, char * argv[])
     //test.read_data(input_filename);
 
     Picard pc;
-    SteepD sd;
+    SteepD sd(output_filedir);
     Anderson ad;
 
     //pc.solve(obp,fp,test.field,test.md*2);
@@ -53,15 +53,15 @@ int main(int argc, char * argv[])
 
     sd.solve(obp,fp2,test.mu,test.dmu,test.md*2,50);
     test.tensor();
-    test.save_data(output_filename);
+    test.save_data(output_filedir);
 
     sd.solve(obp,fp2,test.mu,test.dmu,test.md*2,50);
     test.tensor();
-    test.save_data(output_filename);
+    test.save_data(output_filedir);
 
     sd.solve(obp,fp2,test.mu,test.dmu,test.md*2,50);
     test.tensor();
-    test.save_data(output_filename);
+    test.save_data(output_filedir);
 
 
     /* ad.solve(obp,fp,test.field,test.md*2,20); */

@@ -1,5 +1,5 @@
-DEBUG = 1
-MKL=1
+DEBUG = 0
+MKL=j
 DIM=2
 
 INTEL_DIR= /usr/local/intel/
@@ -10,7 +10,8 @@ CC = gcc
 CXX = g++
 OPTS=-Ofast
 
-LDFLAGS = -L ../lib/
+LDFLAGS=
+LIB= -L ../lib/
 COMMON=  -I ../include/
 CFLAGS=  -DNUM_THREADS=4 -DDIM=2
 
@@ -32,7 +33,7 @@ LDFLAGS += -llapacke -lsoft1
 ifeq ($(MKL), 1)
   CFLAGS+= -DMKL
   COMMON += -I ${INTEL_DIR}/mkl/include/ -I ${INTEL_DIR}/mkl/include/fftw/
-  LIB = -L ${INTEL_DIR}/interfaces/fftw3xc -L ${INTEL_DIR}/mkl/lib/intel64/
+  LIB += -L ${INTEL_DIR}/interfaces/fftw3xc -L ${INTEL_DIR}/mkl/lib/intel64/
   LDFLAGS += -lfftw3xc_gnu -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread
 else
   LDFLAGS += -lfftw3_omp -lfftw3 

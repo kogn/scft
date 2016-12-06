@@ -3,6 +3,9 @@
 
 #include "solver.h"
 #include <cmath>
+#include <sstream>
+#include <string>
+#include <fstream>
 
 #ifdef __cplusplus 
 extern "C" {
@@ -19,32 +22,32 @@ extern "C" {
 
 class Iterator : public Solver
 {
-	public:
-		Iterator(int, int, int[], double, double, double, double,double,double[]);
-		~Iterator();
+    public:
+        Iterator(int, int, int[], double, double, double, double,double,double[]);
+        ~Iterator();
 
-		void update_field();
+        void update_field();
         void delta_mu();
 
-		void print_info();
+        void print_info();
 
         void init();
 
-		void quality();
+        void quality();
 
         double energy();
-		double H;
+        double H;
 
-		double * mu;
+        double * mu;
         double * field;
         double * dmu;
 
-		double chiN;
+        double chiN;
 
-		void save_data(std::string);
-		void save_pdf(std::string);
+        void save_data(std::string);
+        void save_pdf(std::string);
         void read_pdf(std::string);
-		void read_data(std::string);
+        void read_data(std::string);
 
         void density();
         void pdf(double*);
@@ -60,63 +63,127 @@ class Iterator : public Solver
 
 };
 
+/* class Opt */
+/* { */
+/*     public: */
+/*         std::string output_filedir; */
+/*         std::string input_filedir; */
+/*         void save_data(std::string); */
+/*         void read_data(std::string); */
+/* } */
+/* void Opt::save_data(std::string filename) */
+/* { */
+/*   std::ofstream file(filename.c_str()); */
+/*   for(int i = 0; i<md; i++) */
+/*   { */
+/*     file<<phi_A[i]<<" "<<phi_B[i]<<" "<<field[i]<<" "<<field[i+md]; */
+/*     for(int a = 0; a<6; a++) */
+/*       file<<" "<<S_A[a][i]; */
+/*     for(int a = 0; a<6; a++) */
+/*       file<<" "<<S_B[a][i]; */
+/*     file<<std::endl; */
+/*   } */
+/*   file.close(); */
+/*   return; */
+/* } */
+/* void Opt::read_data(std::string s) */
+/* { */
+/*   std::ifstream file(s.c_str()); */
+/*   double tmp; */
+/*   for(int i = 0; i<md; i++) */
+/*   { */
+/*     file>>tmp>>tmp>>field[i]>>field[i+md]; */
+/*     for(int j = 0; j<12; j++) */
+/*       file>>tmp; */
+/*     mu[i] = (field[i]+field[i+md])*0.5; */
+/*     mu[i+md] = (field[i+md]-field[i])*0.5; */
+/*   } */
+/*   file.close(); */
+/*   return; */
+/* } */
+
+static void read_data(std::string filename, double * data, int length){
+    std::ifstream file(filename.c_str());
+    for(int i = 0; i<length; i++){
+        file >> data[i];
+    }
+    file.close();
+    return;
+}
+static void save_data(std::string filename, double * data, int length){
+    std::ofstream file(filename.c_str());
+    for(int i = 0; i<length; i++){
+        file << data[i] << std::endl;
+    }
+    file.close();
+    return;
+}
 class Anderson 
 {
-  public:
-    Anderson();
-    template<class T>
-      void solve(T * ob,void (T::*func) (),double* ,int, int);
-  private:
-    double alpha;
-    bool stop();
-    double eps;
-    int mk;
+    public:
+        Anderson();
+        template<class T>
+            void solve(T * ob,void (T::*func) (),double* ,int, int);
+    private:
+        double alpha;
+        bool stop();
+        double eps;
+        int mk;
 };
 
 class Picard
 {
-  public:
-    Picard();
-    template<class T>
-      void solve(T * ob,void (T::*func) (), double *, int, int);
-  private:
-    double alpha;
-    double eps;
+    public:
+        Picard();
+        template<class T>
+            void solve(T * ob,void (T::*func) (), double *, int, int);
+    private:
+        double alpha;
+        double eps;
 };
 class SteepD
 {
-  public:
-    SteepD();
-    template<class T>
-      void solve(T * ob,void (T::*func) (),double*, double *, int,int);
-  private:
-    double steplength;
-    double eps;
+    public:
+        std::string output_filedir;
+        SteepD(std::string s);
+        template<class T>
+            void solve(T * ob,void (T::*func) (),double*, double *, int,int);
+    private:
+        double steplength;
+        double eps;
 };
 
-template<class T>
-void SteepD::solve(T * ob,void (T::*func) (),double*x, double *dx, int n, int max_steps=200)
+static std::string num2str(int i)
 {
-  int n_iters = 0;
-  double err;
-  do{
-    (ob->*func)();
-
-    err = 0;
-    for(int i = 0; i<n; i++)
-    {
-      x[i] -= steplength*dx[i];
-      /* err = std::max(fabs(dx[i]),err); */
-      err += dx[i]*dx[i];
-    }
-    err = sqrt(err/n);
-    n_iters ++;
-    std::cout<<"The "<<n_iters<<"th step, "<<"error = "<< err <<std::endl;
-  }while(err > eps && n_iters < max_steps);
-  return;
+    std::stringstream ss;
+    ss << i;
+    return ss.str();
 }
 
-template<class T>
+    template<class T>
+void SteepD::solve(T * ob,void (T::*func) (),double*x, double *dx, int n, int max_steps=200)
+{
+    int n_iters = 0;
+    double err;
+    do{
+        (ob->*func)();
+
+        err = 0;
+        for(int i = 0; i<n; i++)
+        {
+            x[i] -= steplength*dx[i];
+            /* err = std::max(fabs(dx[i]),err); */
+            err += dx[i]*dx[i];
+        }
+        err = sqrt(err/n);
+        n_iters ++;
+        std::cout<<"The "<<n_iters<<"th step, "<<"error = "<< err <<std::endl;
+        save_data(output_filedir+"/SteepD_"+num2str(n_iters), x, n);
+    }while(err > eps && n_iters < max_steps);
+    return;
+}
+
+    template<class T>
 void Picard::solve(T * ob, void (T::*func)(), double * x, int n, int max_steps=200)
 {
     int n_iters = 0;
@@ -129,9 +196,9 @@ void Picard::solve(T * ob, void (T::*func)(), double * x, int n, int max_steps=2
         for(int i=0; i<n; i++)
         {
             //err = fabs(x[i]-xcp[i])>err?fabs(x[i]-xcp[i]):err;
-          /* err = std::max(fabs(x[i]-xcp[i]),err); */
-          err += (x[i]-xcp[i])*(x[i]-xcp[i]);
-          x[i] = xcp[i]*(1.-alpha) + x[i]*alpha;
+            /* err = std::max(fabs(x[i]-xcp[i]),err); */
+            err += (x[i]-xcp[i])*(x[i]-xcp[i]);
+            x[i] = xcp[i]*(1.-alpha) + x[i]*alpha;
         }
         err = sqrt(err/n);
         n_iters ++;
@@ -141,7 +208,7 @@ void Picard::solve(T * ob, void (T::*func)(), double * x, int n, int max_steps=2
     return;
 }
 
-template<class T>
+    template<class T>
 void Anderson::solve(T * ob,void (T::*func) (),double* y ,int n, int max_steps=200)
 {
     int n_iters = 0;
