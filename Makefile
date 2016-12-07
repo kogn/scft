@@ -13,7 +13,7 @@ OPTS=-Ofast
 LDFLAGS=
 LIB= -L ../lib/
 COMMON=  -I ../include/
-CFLAGS=  -DNUM_THREADS=4 -DDIM=2
+CFLAGS=  -DNUM_THREADS=4 -DDIM=${DIM}
 
 
 ifeq ($(DEBUG), 1)

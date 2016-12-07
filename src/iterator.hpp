@@ -12,6 +12,7 @@ extern "C" {
 #endif //__cplusplus
 #include <lapacke.h>
 #include <memory.h>
+#include "timer.h"
 #ifdef __cplusplus 
 }
 #endif //__cplusplus
@@ -19,6 +20,9 @@ extern "C" {
 #ifndef NUM_THREADS
 #define NUM_THREADS 4
 #endif //NUM_THREADS
+#ifndef DIM 
+#define DIM 1
+#endif
 template<class TA, class TB>
 class Iterator
 {
@@ -48,24 +52,57 @@ class Iterator
 
         double chiN;
 
+        void read_data(std::string);
 };
-
-static void read_data(std::string filename, double * data, int length){
-    std::ifstream file(filename.c_str());
-    for(int i = 0; i<length; i++){
-        file >> data[i];
+#if DIM == 1
+    template<class TA, class TB>
+void Iterator<TA,TB>::read_data(std::string s)
+{
+    std::ifstream file(s.c_str());
+    std::string buff;
+    double tmp;
+    for(int i = 0; i<m[0]; i++)
+    {
+        for(int j = 0; j<15; j++){
+            getline(file,buff);
+        }
+        file>>tmp>>tmp>>field[i]>>field[i+md];
+        for(int j = 0; j<12; j++)
+            file>>tmp;
+        mu[i] = (field[i]+field[i+md])*0.5;
+        mu[i+md] = (field[i+md]-field[i])*0.5;
     }
     file.close();
     return;
 }
-static void save_data(std::string filename, double * data, int length){
-    std::ofstream file(filename.c_str());
-    for(int i = 0; i<length; i++){
-        file << data[i] << std::endl;
+#endif
+ 
+#if DIM == 2
+    template<class TA, class TB>
+void Iterator<TA,TB>::read_data(std::string s)
+{
+    std::ifstream file(s.c_str());
+    std::string buff;
+    double tmp;
+    for(int i = 0; i<m[0]; i++)
+    {
+        for(int j = 0; j<15; j++){
+            getline(file,buff);
+        }
+        file>>tmp>>tmp>>field[i]>>field[i+md];
+        for(int j = 1; j<m[1]; j++){
+            field[i+j*m[0]] = field[i];
+            field[i+j*m[0]+md] = field[i+md];
+        }
+        for(int j = 0; j<12; j++)
+            file>>tmp;
+        mu[i] = (field[i]+field[i+md])*0.5;
+        mu[i+md] = (field[i+md]-field[i])*0.5;
     }
     file.close();
     return;
 }
+#endif
 class Anderson 
 {
     public:
@@ -92,6 +129,9 @@ class Picard
 class SteepD
 {
     public:
+        void read_data(std::string filename, double * data, int length);
+        void read_data2(std::string filename, double * data, int length, int times);
+        void save_data(std::string filename, double * data, int length);
         std::string output_filedir;
         SteepD(std::string s);
         template<class T>
@@ -114,6 +154,8 @@ void SteepD::solve(T * ob,void (T::*func) (),double*x, double *dx, int n, int ma
     int n_iters = 0;
     double err;
     do{
+        n_iters ++;
+        std::cout<<"The "<<n_iters<<"th step:\n" <<std::endl;
         (ob->*func)();
 
         err = 0;
@@ -124,8 +166,7 @@ void SteepD::solve(T * ob,void (T::*func) (),double*x, double *dx, int n, int ma
             err += dx[i]*dx[i];
         }
         err = sqrt(err/n);
-        n_iters ++;
-        std::cout<<"The "<<n_iters<<"th step, "<<"error = "<< err <<std::endl;
+        std::cout<<"Time = "<< timer()<<", " <<"error = "<< err <<std::endl;
         save_data(output_filedir+"/SteepD_"+num2str(n_iters), x, n);
     }while(err > eps && n_iters < max_steps);
     return;

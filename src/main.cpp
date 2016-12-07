@@ -24,12 +24,14 @@ int main(int argc, char * argv[])
     double chiN = configSettings.Read<double>("chiN");
     double domain[DIM];
     domain[0] = configSettings.Read<double>("domain0");
-    domain[1] = configSettings.Read<double>("domain1");
     int n = configSettings.Read<int>("Steps_on_chain");
     int bw = configSettings.Read<int>("Band_width");
     int m[DIM];
     m[0] = configSettings.Read<int>("Grid_Size_x");
-    m[1] = configSettings.Read<int>("Grid_Size_y");
+    if(DIM==2){
+        m[1] = configSettings.Read<int>("Grid_Size_y");
+        domain[1] = configSettings.Read<double>("domain1");
+    }
 
     std::string output_filedir = configSettings.Read<std::string>("Output_dir");
     std::string input_filedir = configSettings.Read<std::string>("Input_dir");
@@ -42,7 +44,7 @@ int main(int argc, char * argv[])
     Iterator<Solver,Solver> test(n,bw,m,alpha,beta,kappa,tau,chiN,domain);
     Iterator<Solver,Solver> * obp=&test;
 
-    //test.read_data(input_filename);
+    test.read_data("./data/transoutput_512_2_2_10_5_6_5");
 
     Picard pc;
     SteepD sd(output_filedir);
@@ -51,6 +53,7 @@ int main(int argc, char * argv[])
     //pc.solve(obp,fp,test.field,test.md*2);
 
 
+    sd.read_data2("./data/SteepD_20", test.mu, test.m[0]*2, test.m[1]);
     sd.solve(obp,fp2,test.mu,test.dmu,test.md*2,20);
     test.A.tensor();
     //test.A.save_data(output_filedir);

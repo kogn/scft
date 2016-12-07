@@ -20,6 +20,7 @@ extern "C" {
 #include <soft/csecond.h>
 #include <omp.h>
 #include <sys/time.h>
+#include "timer.h"
 
 #ifdef __cplusplus
 }
@@ -28,16 +29,6 @@ extern "C" {
 #ifndef NUM_THREADS
 #define NUM_THREADS 4
 #endif //NUM_THREADS
-
-// Timer function: Measure the current time
-double timer(void) {
-    struct timeval Tvalue;
-    struct timezone dummy;
-    gettimeofday(&Tvalue, &dummy);
-    double etime = (double)Tvalue.tv_sec + 1.0e-6*((double)Tvalue.tv_usec);
-    return etime;
-    //return omp_get_wtime();
-}
 
 int Solver::count = 0;
 fftw_complex * Solver::matrix = NULL;
@@ -117,9 +108,9 @@ void Solver::onestep(double * field)
   constant(dt_gamma0_2, field);
   for_space();
   gradient(dt_gamma0_2);
-  for_so3();
-  laplace(dt_gamma0);
-  inv_so3();
+  /* for_so3(); */
+  /* //laplace(dt_gamma0); */
+  /* inv_so3(); */
   gradient(dt_gamma0_2);
   inv_space();
   constant(dt_gamma0_2, field);
@@ -128,9 +119,9 @@ void Solver::onestep(double * field)
   constant(dt_gamma1_2, field);
   for_space();
   gradient(dt_gamma1_2);
-  for_so3();
-  laplace(dt_gamma1);
-  inv_so3();
+  /* for_so3(); */
+  /* //laplace(dt_gamma1); */
+  /* inv_so3(); */
   gradient(dt_gamma1_2);
   inv_space();
   constant(dt_gamma1_2, field);
@@ -138,14 +129,15 @@ void Solver::onestep(double * field)
   constant(dt_gamma0_2, field);
   for_space();
   gradient(dt_gamma0_2);
-  for_so3();
-  laplace(dt_gamma0);
-  inv_so3();
+  /* for_so3(); */
+  /* //laplace(dt_gamma0); */
+  /* inv_so3(); */
   gradient(dt_gamma0_2);
   inv_space();
   constant(dt_gamma0_2, field);
   for(int i = 0; i<md; i++){
-      realdata[i][0] = sqrt(realdata[i][0]*realdata[i][0]+realdata[i][1]*realdata[i][1]);
+      //realdata[i][0] = sqrt(realdata[i][0]*realdata[i][0]+realdata[i][1]*realdata[i][1]);
+      realdata[i][0] = fabs(realdata[i][0]);
       realdata[i][1] = 0.;
   }
 
