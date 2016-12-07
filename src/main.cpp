@@ -53,7 +53,8 @@ int main(int argc, char * argv[])
     //pc.solve(obp,fp,test.field,test.md*2);
 
 
-    sd.read_data2("./data/SteepD_20", test.mu, test.m[0]*2, test.m[1]);
+    //sd.read_data2("./data/SteepD_20", test.mu, test.m[0]*2, test.m[1]);
+    sd.read_data("./data/SteepD_20", test.mu, test.md*2);
     sd.solve(obp,fp2,test.mu,test.dmu,test.md*2,20);
     test.A.tensor();
     //test.A.save_data(output_filedir);

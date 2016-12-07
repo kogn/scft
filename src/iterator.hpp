@@ -155,7 +155,7 @@ void SteepD::solve(T * ob,void (T::*func) (),double*x, double *dx, int n, int ma
     double err;
     do{
         n_iters ++;
-        std::cout<<"The "<<n_iters<<"th step:\n" <<std::endl;
+        std::cout<<"The "<<n_iters<<"th step:" <<std::endl;
         (ob->*func)();
 
         err = 0;
@@ -401,7 +401,7 @@ void Iterator<TA,TB>::print_info()
         quality += A.phi[i] + B.phi[i];
     }
     quality /= md;
-        std::cout<<std::endl<<"Quality = "<<quality<<"; Q_A = "<<A.Q<<
+        std::cout<<"Quality = "<<quality<<"; Q_A = "<<A.Q<<
           "; Q_B = "<<B.Q<<"; H = "
         <<H<<std::endl;
     return;

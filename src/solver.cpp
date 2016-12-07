@@ -178,10 +178,6 @@ void Solver::gradient(fftw_complex dt)
             double ex = exp(-tmp1*index2);
             for(int k = 0; k<n; k++)
             {
-                //double tmp = -sin(M_PI*(2*j+1)/4./bw)*sin(2*M_PI*k/n)*2.*M_PI/domain[0]*dt[0];
-                //double tmp1 = -sin(M_PI*(2*j+1)/4./bw)*sin(2*M_PI*k/n)*2.*M_PI/domain[0]*dt[1];
-                //double tmp = -sin(M_PI*(2*j+1)/4./bw)*cos(2*M_PI*k/n)*2.*M_PI/domain[0]*dt[0];
-                //double tmp1 = -sin(M_PI*(2*j+1)/4./bw)*cos(2*M_PI*k/n)*2.*M_PI/domain[0]*dt[1];
                 for(int l = 0; l<n; l++)
                 {
                     int index = i*n3+n*n*j+n*k+l;
@@ -203,7 +199,7 @@ void Solver::gradient(fftw_complex dt)
     {
         for(int i1 = 0; i1<m[1]; i1++){
             int index0 = (i+m[0]/2)%m[0]-m[0]/2;
-            int index1 = (i+m[1]/2)%m[1]-m[1]/2;
+            int index1 = (i1+m[1]/2)%m[1]-m[1]/2;
             for(int j = 0; j<n; j++)
             {
                 for(int k = 0; k<n; k++)
