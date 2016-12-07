@@ -258,6 +258,14 @@ Iterator<TA,TB>::Iterator(int ns, int bw1, int m1[], double alpha0, double beta0
         for(int i = 0; i<m[0]; i++)
             for(int j = 0; j<m[1]; j++)
             {
+                /* field[i] = -2*cos(2*M_PI*i/md); */
+                /* field[i+md] = -field[i]; */
+                /* mu[i] = (field[i] + field[i+md])/2.; */
+                /* mu[i+md] = (-field[i] + field[i+md])/2.; */
+                /* mu[i] = -2*cos(2*M_PI*i/md); */
+                /* mu[i+md] = -mu[i]; */
+                /* field[i] = mu[i] - mu[i+md]; */
+                /* field[i+md] = mu[i] + mu[i+md]; */
                 mu[i*m[1]+j] = -.2*cos(2*M_PI*i/m[0]) + 0.2*cos(2*M_PI*j/m[1]);
                 mu[i*m[1]+j+md] = -mu[i*m[1]+j];
                 field[i*m[1]+j] = mu[i*m[1]+j] - mu[i*m[1]+j+md];
