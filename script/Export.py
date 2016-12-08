@@ -154,7 +154,7 @@ sgrid_v.points = np.array(pts2)
 sgrid_v.point_data.tensors = tensor
 sgrid_v.point_data.tensors.name = 'Q'
 
-w = tvtk.XMLStructuredGridWriter(input=sgrid_v, file_name='Q.vts')
+w = tvtk.XMLStructuredGridWriter(input=sgrid_v, file_name='scripts/Q.vts')
 w.write()
 
 
