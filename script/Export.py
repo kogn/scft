@@ -127,26 +127,26 @@ w = tvtk.XMLStructuredGridWriter(input=sgrid, file_name='Cl.vts')
 w.write()
 '''
 
-dims = (1, 1, 256)
+dims = (1, 32, 32)
 sgrid_v = tvtk.StructuredGrid(dimensions=dims)
 
 ################################################################################文件名
-file1 = open("data/output","r")
+file1 = open("data/Param_2_2_10_5","r")
 ################################################################################
 records1 = file1.readlines()
 file1.close()
 vct2,pts2,tensor = [[],[],[]]
 i = 0;
 for line in records1:
+    pts2.append([0,i/32,i%32])
     i = i+1;
     #pts2.append([float(line.split(" ")[0]),float(line.split(" ")[1]),float(line.split(" ")[2])])
-    pts2.append([0,0,i])
     linesp= line.split()
     # vct2.append([float(line.split()[6]),float(line.split()[7]),float(line.split()[8])])
-    tensor.append([1.0/3 + float(linesp[10]),float(linesp[13]),float(linesp[14]),float(linesp[13]),1.0/3 + float(linesp[11]),float(linesp[15]),float(linesp[14]),float(linesp[15]), 1.0/3 +float(linesp[12])])
+    tensor.append([1.0/3 + float(linesp[1]),float(linesp[4]),float(linesp[5]),float(linesp[4]),1.0/3 + float(linesp[2]),float(linesp[6]),float(linesp[5]),float(linesp[6]), 1.0/3 +float(linesp[3])])
 
 
-vector=np.array(vct2)
+#vector=np.array(vct2)
 
 sgrid_v.points = np.array(pts2)
 #sgrid_v.point_data.vectors = vector

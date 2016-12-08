@@ -27,14 +27,12 @@ template<class TA, class TB>
 class Iterator
 {
     public:
-        Iterator(int, int, int[], double, double, double, double,double,double[]);
+        Iterator(const Config&);
         ~Iterator();
         TA A;
         TB B;
         int md;
         int m[DIM];
-        int n;
-        int n3;
 
         void update_field();
         void delta_mu();
@@ -52,57 +50,41 @@ class Iterator
 
         double chiN;
 
-        void read_data(std::string);
+        void read_field(std::string);
+        void read_mu(std::string);
 };
-#if DIM == 1
+
     template<class TA, class TB>
-void Iterator<TA,TB>::read_data(std::string s)
+void Iterator<TA,TB>::read_field(std::string s)
 {
     std::ifstream file(s.c_str());
-    std::string buff;
-    double tmp;
-    for(int i = 0; i<m[0]; i++)
+    for(int i = 0; i<md*2; i++)
     {
-        for(int j = 0; j<15; j++){
-            getline(file,buff);
-        }
-        file>>tmp>>tmp>>field[i]>>field[i+md];
-        for(int j = 0; j<12; j++)
-            file>>tmp;
+        file>>field[i];
+    }
+    for(int i = 0; i<md; i++){
         mu[i] = (field[i]+field[i+md])*0.5;
         mu[i+md] = (field[i+md]-field[i])*0.5;
     }
     file.close();
     return;
 }
-#endif
- 
-#if DIM == 2
     template<class TA, class TB>
-void Iterator<TA,TB>::read_data(std::string s)
+void Iterator<TA,TB>::read_mu(std::string s)
 {
     std::ifstream file(s.c_str());
-    std::string buff;
-    double tmp;
-    for(int i = 0; i<m[0]; i++)
+    for(int i = 0; i<md*2; i++)
     {
-        for(int j = 0; j<15; j++){
-            getline(file,buff);
-        }
-        file>>tmp>>tmp>>field[i]>>field[i+md];
-        for(int j = 1; j<m[1]; j++){
-            field[i+j*m[0]] = field[i];
-            field[i+j*m[0]+md] = field[i+md];
-        }
-        for(int j = 0; j<12; j++)
-            file>>tmp;
-        mu[i] = (field[i]+field[i+md])*0.5;
-        mu[i+md] = (field[i+md]-field[i])*0.5;
+        file>>mu[i];
+    }
+    for(int i = 0; i<md; i++){
+        field[i] = mu[i] - mu[i+md];
+        field[i+md] = mu[i] + mu[i+md];
     }
     file.close();
     return;
 }
-#endif
+
 class Anderson 
 {
     public:
@@ -132,7 +114,7 @@ class SteepD
         void read_data(std::string filename, double * data, int length);
         void read_data2(std::string filename, double * data, int length, int times);
         void save_data(std::string filename, double * data, int length);
-        std::string output_filedir;
+        std::string output_fileprefix;
         SteepD(std::string s);
         template<class T>
             void solve(T * ob,void (T::*func) (),double*, double *, int,int);
@@ -153,6 +135,7 @@ void SteepD::solve(T * ob,void (T::*func) (),double*x, double *dx, int n, int ma
 {
     int n_iters = 0;
     double err;
+    timer();
     do{
         n_iters ++;
         std::cout<<"The "<<n_iters<<"th step:" <<std::endl;
@@ -166,8 +149,8 @@ void SteepD::solve(T * ob,void (T::*func) (),double*x, double *dx, int n, int ma
             err += dx[i]*dx[i];
         }
         err = sqrt(err/n);
-        std::cout<<"Time = "<< timer()<<", " <<"error = "<< err <<std::endl;
-        save_data(output_filedir+"/SteepD_"+num2str(n_iters), x, n);
+        std::cout<<"Time = "<< timer()/60.<<" min, " <<"error = "<< err <<std::endl;
+        save_data(output_fileprefix+"SteepD_"+num2str(n_iters), x, n);
     }while(err > eps && n_iters < max_steps);
     return;
 }
@@ -268,14 +251,11 @@ void Anderson::solve(T * ob,void (T::*func) (),double* y ,int n, int max_steps=2
 
 
 template<class TA, class TB>
-Iterator<TA,TB>::Iterator(int ns, int bw1, int m1[], double alpha0, double beta0, 
-        double kappa0, double tau0, double chiN0,double domain0[]):
-    A(ns,bw1,m1,alpha0,beta0,kappa0,tau0,domain0),
-    B(ns,bw1,m1,alpha0,beta0,kappa0,tau0,domain0),chiN(chiN0)
+Iterator<TA,TB>::Iterator(const Config & configSettings):
+    A(configSettings),B(configSettings)
 {
+    chiN = configSettings.Read<double>("chiN");
     md = A.md;
-    n = A.n;
-    n3 = A.n3;
     
     mu= (double *)malloc(sizeof(double)*md*2);
     dmu= (double *)malloc(sizeof(double)*md*2);
@@ -294,7 +274,6 @@ Iterator<TA,TB>::Iterator(int ns, int bw1, int m1[], double alpha0, double beta0
     }
     if(DIM == 2)
     {
-        int m[2];
         m[0] = A.m[0]; m[1] =  A.m[1];
         for(int i = 0; i<m[0]; i++)
             for(int j = 0; j<m[1]; j++)
@@ -307,7 +286,7 @@ Iterator<TA,TB>::Iterator(int ns, int bw1, int m1[], double alpha0, double beta0
                 /* mu[i+md] = -mu[i]; */
                 /* field[i] = mu[i] - mu[i+md]; */
                 /* field[i+md] = mu[i] + mu[i+md]; */
-                mu[i*m[1]+j] = -.2*cos(2*M_PI*i/m[0]) + 0.2*cos(2*M_PI*j/m[1]);
+                mu[i*m[1]+j] = -.2*cos(2*M_PI*i/m[0]) + .2*cos(2*M_PI*j/m[1]);
                 mu[i*m[1]+j+md] = -mu[i*m[1]+j];
                 field[i*m[1]+j] = mu[i*m[1]+j] - mu[i*m[1]+j+md];
                 field[i*m[1]+j+md] = mu[i*m[1]+j] + mu[i*m[1]+j+md];

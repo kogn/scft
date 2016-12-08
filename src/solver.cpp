@@ -34,38 +34,44 @@ int Solver::count = 0;
 fftw_complex * Solver::matrix = NULL;
 fftw_complex * Solver::matrix1 = NULL;
 double * Solver::hist_forward = NULL;
-double * Solver::hist_backward = NULL;
-Solver::Solver(int ns, int bw1, int m1[],double alpha0, double beta0, double kappa0, double tau0, double domain0[]):
-  Space_trans(bw1,m1),SO3_trans(bw1,m1),Data(bw1,m1),n_step(ns),
-  tau(tau0),alpha(alpha0),beta(beta0),kappa(kappa0)
+//double * Solver::hist_backward = NULL;
+Solver::Solver(const Config & configSettings):
+    Space_trans(configSettings),SO3_trans(configSettings),Data(configSettings)
 {
-  phi = (double *) malloc(sizeof(double)*md);
-  S[0] = (double *) malloc(sizeof(double)*md*6);
-  for(int i = 0; i<6; i++)
-  {
-    S[i] = S[0] + md*i;
-  }
-  f = (double *)malloc(sizeof(double)*md*n3);
-  dt = 1./ns;
-  gamma[0][0] = 0.324396404020171225;
-  gamma[0][1] = 0.134586272490806680;
-  gamma[1][0] = 0.351207191959657661;
-  gamma[1][1] = -0.269172544981613415;
-  /* gamma[0][0] = 1./3; */
-  /* gamma[0][1] = 0.; */
-  /* gamma[1][0] = 1./3; */
-  /* gamma[1][1] = 0; */
-  if(count == 0){
-      matrix = (fftw_complex *)fftw_malloc(sizeof(fftw_complex)*totalCoeffs_so3(bw));
-      matrix1 = (fftw_complex *)fftw_malloc(sizeof(fftw_complex)*totalCoeffs_so3(bw));
-      getmatrix(bw,alpha,beta,kappa,tau,gamma, dt,matrix,matrix1);
-      count ++;
-      hist_forward = (double *) malloc(sizeof(double)*md*n3*(n_step+1));
-      hist_backward= (double *) malloc(sizeof(double)*md*n3*(n_step+1));
-  }
+    n_step = configSettings.Read<int>("Steps_on_chain");
+    alpha = configSettings.Read<double>("alpha");
+    beta = configSettings.Read<double>("beta");
+    kappa = configSettings.Read<double>("kappa");
+    tau = configSettings.Read<double>("tau");
+    phi = (double *) malloc(sizeof(double)*md);
+    S[0] = (double *) malloc(sizeof(double)*md*6);
+    for(int i = 0; i<6; i++)
+    {
+        S[i] = S[0] + md*i;
+    }
+    f = (double *)malloc(sizeof(double)*md*n3);
+    dt = 1./n_step;
+    gamma[0][0] = 0.324396404020171225;
+    gamma[0][1] = 0.134586272490806680;
+    gamma[1][0] = 0.351207191959657661;
+    gamma[1][1] = -0.269172544981613415;
+    /* gamma[0][0] = 1./3; */
+    /* gamma[0][1] = 0.; */
+    /* gamma[1][0] = 1./3; */
+    /* gamma[1][1] = 0; */
+    if(count == 0){
+        matrix = (fftw_complex *)fftw_malloc(sizeof(fftw_complex)*totalCoeffs_so3(bw));
+        matrix1 = (fftw_complex *)fftw_malloc(sizeof(fftw_complex)*totalCoeffs_so3(bw));
+        getmatrix(bw,alpha,beta,kappa,tau,gamma, dt,matrix,matrix1);
+        count ++;
+        hist_forward = (double *) malloc(sizeof(double)*md*n3*(n_step+1));
+        //hist_backward= (double *) malloc(sizeof(double)*md*n3*(n_step+1));
+    }
 
-  for(int i = 0; i<DIM; i++)
-    domain[i] = domain0[i];
+    domain[0] = configSettings.Read<double>("domain0");
+    if(DIM==2){
+        domain[1] = configSettings.Read<double>("domain1");
+    }
 }
 
 
@@ -84,7 +90,7 @@ Solver::~Solver()
 {
     if(count == 1){
         free(hist_forward);
-        free(hist_backward);
+        //free(hist_backward);
         count --;
         fftw_free(matrix);
         fftw_free(matrix1);
@@ -102,15 +108,12 @@ void Solver::onestep(double * field)
   fftw_complex dt_gamma1_2 = {dt*gamma[1][0]/2,dt*gamma[1][1]/2};
   fftw_complex dt_gamma1 = {dt*gamma[1][0],dt*gamma[1][1]};
 
-  double etime, etime2;
-
-  etime = timer();
   constant(dt_gamma0_2, field);
   for_space();
   gradient(dt_gamma0_2);
-  /* for_so3(); */
-  /* //laplace(dt_gamma0); */
-  /* inv_so3(); */
+  for_so3();
+  laplace(dt_gamma0);
+  inv_so3();
   gradient(dt_gamma0_2);
   inv_space();
   constant(dt_gamma0_2, field);
@@ -119,9 +122,9 @@ void Solver::onestep(double * field)
   constant(dt_gamma1_2, field);
   for_space();
   gradient(dt_gamma1_2);
-  /* for_so3(); */
-  /* //laplace(dt_gamma1); */
-  /* inv_so3(); */
+  for_so3();
+  laplace(dt_gamma1);
+  inv_so3();
   gradient(dt_gamma1_2);
   inv_space();
   constant(dt_gamma1_2, field);
@@ -129,17 +132,17 @@ void Solver::onestep(double * field)
   constant(dt_gamma0_2, field);
   for_space();
   gradient(dt_gamma0_2);
-  /* for_so3(); */
-  /* //laplace(dt_gamma0); */
-  /* inv_so3(); */
+  for_so3();
+  laplace(dt_gamma0);
+  inv_so3();
   gradient(dt_gamma0_2);
   inv_space();
   constant(dt_gamma0_2, field);
-  for(int i = 0; i<md; i++){
-      //realdata[i][0] = sqrt(realdata[i][0]*realdata[i][0]+realdata[i][1]*realdata[i][1]);
-      realdata[i][0] = fabs(realdata[i][0]);
-      realdata[i][1] = 0.;
-  }
+  /* for(int i = 0; i<md*n3; i++){ */
+  /*     //realdata[i][0] = sqrt(realdata[i][0]*realdata[i][0]+realdata[i][1]*realdata[i][1]); */
+  /*     //realdata[i][0] = fabs(realdata[i][0]); */
+  /*     //realdata[i][1] = 0.; */
+  /* } */
 
   t += dt;
 }
@@ -213,7 +216,7 @@ void Solver::gradient(fftw_complex dt)
                     double ex = exp(-tmp01*index0-tmp11*index1);
                     for(int l = 0; l<n; l++)
                     {
-                        int index = i*n3+n*n*j+n*k+l;
+                        int index = (i*m[1]+i1)*n3+n*n*j+n*k+l;
                         double real = realdata[index][0];
                         double imag = realdata[index][1];
                         realdata[index][0] = (co*real - si*imag)*ex;
@@ -296,7 +299,7 @@ void Solver::pdf()
         for(int kk = 0; kk<n; kk++)
         {
           int index = kk+n*k+j*n*n+i*n3;
-          int index2 = (n-kk)%n+(n/2+k)%n*n+(n-j-1)*n*n+i*n3;
+          int index2 = (n-kk)%n+((n/2+k)%n)*n+(n-j-1)*n*n+i*n3;
           func[index] = 3./8*(hist_forward[md*n3*n_step+index2]+hist_forward[md*n3*n_step+index]);
           func[index] += 7./6*(hist_forward[md*n3*(n_step-1)+index2]*hist_forward[md*n3*1+index]
               +hist_forward[md*n3*1+index2]*hist_forward[md*n3*(n_step-1)+index]);
@@ -404,7 +407,7 @@ double Solver::ptnfn(int s)
       for(int k = 0; k<n; k++)
         for(int kk = 0; kk<n; kk++)
         {
-          tmp2 += ptr[kk+n*k+j*n*n+i*n3]*ptr2[(n-kk)%n+(n/2+k)%n*n+(n-j-1)*n*n+i*n3];
+          tmp2 += ptr[kk+n*k+j*n*n+i*n3]*ptr2[(n-kk)%n+((n/2+k)%n)*n+(n-j-1)*n*n+i*n3];
           //+ ptr3[kk+n*k+j*n*n+i*n3]*ptr4[(n-kk)%n+(n/2+k)%n*n+(n-j-1)*n*n+i*n3];
         }
       tmp2 *= weights[j];
@@ -452,9 +455,10 @@ void Solver::read_pdf(std::string filename){
 void Solver::save_data(std::string filename)
 {
   std::ofstream file(filename.c_str());
+  tensor();
   for(int i = 0; i<md; i++)
   {
-    file<<phi[i]<<" "<<phi[i];
+    file<<phi[i];
     for(int a = 0; a<6; a++)
       file<<" "<<S[a][i];
     file<<std::endl;

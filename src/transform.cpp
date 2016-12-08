@@ -30,20 +30,24 @@ extern "C" {
 #endif //NUM_THREADS
 
 #include "transform.h"
+#include "Config.h"
 
-Data::Data(int bw1, int m1[]):bw(bw1)
+Data::Data(const Config & configSettings)
 {
-  for(int i = 0; i<DIM; i++){
-    m[i] = m1[i];
-  }
-  n_coeff = totalCoeffs_so3(bw);
-  n = bw*2;
-  n3 = n*n*n;
-  md = 1;
-  for(int i = 0; i<DIM; i++)
-    md *= m[i];
-  realdata = (fftw_complex *)fftw_malloc(sizeof(fftw_complex)*n3*md);
-  spectdata = (fftw_complex *)fftw_malloc(sizeof(fftw_complex)*n_coeff*md);
+    bw = configSettings.Read<int>("Band_width");
+    m[0] = configSettings.Read<int>("Grid_Size_x");
+    if(DIM==2){
+        m[1] = configSettings.Read<int>("Grid_Size_y");
+    }
+
+    n_coeff = totalCoeffs_so3(bw);
+    n = bw*2;
+    n3 = n*n*n;
+    md = 1;
+    for(int i = 0; i<DIM; i++)
+        md *= m[i];
+    realdata = (fftw_complex *)fftw_malloc(sizeof(fftw_complex)*n3*md);
+    spectdata = (fftw_complex *)fftw_malloc(sizeof(fftw_complex)*n_coeff*md);
 }
 
 Data::~Data()
@@ -52,7 +56,7 @@ Data::~Data()
   fftw_free(spectdata);
 }
 
-Space_trans::Space_trans(int bw1, int m1[]):Data(bw1,m1)
+Space_trans::Space_trans(const Config & configSettings):Data(configSettings)
 {
   fftw_iodim dims[DIM], howmany_dims[1];
   int rank = DIM;
@@ -113,7 +117,7 @@ void Space_trans::inv_space()
   return;
 }
 
-SO3_trans::SO3_trans(int bw1, int m1[]):Data(bw1,m1)
+SO3_trans::SO3_trans(const Config & configSettings):Data(configSettings)
 {
   workspace_cx =(fftw_complex**)malloc(sizeof(fftw_complex*)*NUM_THREADS);
   workspace_cx2=(fftw_complex**)malloc(sizeof(fftw_complex*)*NUM_THREADS);

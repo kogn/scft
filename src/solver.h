@@ -24,7 +24,7 @@ class Solver : public Space_trans, public SO3_trans
 {
     public:
         static int count;
-        Solver(int, int, int[],double,double,double,double,double[]);
+        Solver(const Config &);
         Solver();
         ~Solver();
 

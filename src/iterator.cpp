@@ -24,7 +24,7 @@ Anderson::Anderson()
     eps = 1e-4;
     mk = 20;
 }
-SteepD::SteepD(std::string s):output_filedir(s)
+SteepD::SteepD(std::string s):output_fileprefix(s)
 {
   eps = 1e-4;
   steplength = 1;
