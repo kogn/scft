@@ -4,6 +4,8 @@
 #include <string>
 #include "iterator.hpp"
 #include "Config.h"
+#include "solver.h"
+#include "particle.h"
 
 #ifndef DIM
 #define DIM 1
@@ -24,14 +26,22 @@ int main(int argc, char * argv[])
     std::string output_filename = configSettings.Read<std::string>("Output_filename");
     std::string param_filename= configSettings.Read<std::string>("Param_filename");
     int max_steps = configSettings.Read<int>("Max_steps");
+    /* int A_type = configSettings.Read<int>("A_type"); */
+    /* int B_type = configSettings.Read<int>("B_type"); */
+    /* switch(A_type){ */
+    /*     case 0: */
+    /*         typedef Solver TA; */
+    /*     case 1: */
+    /*         typedef Particle TA; */
+    /* } */
 
 
-    void (Iterator<Solver,Solver>::*fp)();
-    void (Iterator<Solver,Solver>::*fp2)();
-    fp = &Iterator<Solver,Solver>::update_field;
-    fp2 = &Iterator<Solver,Solver>::delta_mu;
-    Iterator<Solver,Solver> test(configSettings);
-    Iterator<Solver,Solver> * obp=&test;
+    void (Iterator<Solver,Particle>::*fp)();
+    void (Iterator<Solver,Particle>::*fp2)();
+    fp = &Iterator<Solver,Particle>::update_field;
+    fp2 = &Iterator<Solver,Particle>::delta_mu;
+    Iterator<Solver,Particle> test(configSettings);
+    Iterator<Solver,Particle> * obp=&test;
 
     test.read_mu(input_filedir+input_filename);
 

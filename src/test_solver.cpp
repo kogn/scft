@@ -13,10 +13,8 @@ int main(int argc, char * argv[])
     }
     Config configSettings(argv[1]);
 
-    /* Solver test(n,bw,m,alpha,beta,kappa,tau,domain); */
-    /* Solver test1(n,bw,m,alpha,beta,kappa,tau,domain); */
+    Solver test(configSettings);
 
-    Iterator<Solver,Solver> test(configSettings);
     double * field = (double *)malloc(sizeof(double)*test.md*2);
     double * mu= (double *)malloc(sizeof(double)*test.md*2);
 
@@ -42,12 +40,11 @@ int main(int argc, char * argv[])
     /*       field[i*m[1]+j+md] = mu[i*m[1]+j] + mu[i*m[1]+j+md]; */
     /*     } */
     /* } */
-    //test.solve_eqn(field);
+    test.density(field);
 
-    test.A.solve_eqn(test.field);
 
-    for(int i = 0; i<= test.A.n_step; i++)
-        std::cout<<test.A.ptnfn(i)<<std::endl;
+    for(int i = 0; i<= test.n_step; i++)
+        std::cout<<test.ptnfn(i)<<std::endl;
     free(field);
     free(mu);
 

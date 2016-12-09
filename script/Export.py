@@ -131,7 +131,7 @@ dims = (1, 32, 32)
 sgrid_v = tvtk.StructuredGrid(dimensions=dims)
 
 ################################################################################文件名
-file1 = open("data/Param_2_2_10_5","r")
+file1 = open("data/Param_2_2_0_0","r")
 ################################################################################
 records1 = file1.readlines()
 file1.close()
@@ -154,7 +154,7 @@ sgrid_v.points = np.array(pts2)
 sgrid_v.point_data.tensors = tensor
 sgrid_v.point_data.tensors.name = 'Q'
 
-w = tvtk.XMLStructuredGridWriter(input=sgrid_v, file_name='scripts/Q.vts')
+w = tvtk.XMLStructuredGridWriter(input=sgrid_v, file_name='script/Q1.vts')
 w.write()
 
 

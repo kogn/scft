@@ -100,7 +100,7 @@ Solver::~Solver()
     free(f);
 }
 
-void Solver::onestep(double * field)
+void Solver::onestep(const double * field)
 {
   fftw_complex dt_gamma0_2 = {dt*gamma[0][0]/2,dt*gamma[0][1]/2};
   fftw_complex dt_gamma0 = {dt*gamma[0][0],dt*gamma[0][1]};
@@ -147,7 +147,7 @@ void Solver::onestep(double * field)
   t += dt;
 }
 
-void Solver::constant(fftw_complex dt,double * field)
+void Solver::constant(fftw_complex dt,const double * field)
 {
 #pragma omp parallel for num_threads(NUM_THREADS)
   for(int i = 0; i<md; i++)
@@ -265,7 +265,7 @@ void Solver::laplace(fftw_complex dt)
     return;
 }
 
-void Solver::solve_eqn(double * field)
+void Solver::solve_eqn(const double * field)
 {
   init_data();
 
@@ -314,25 +314,28 @@ void Solver::pdf()
   return;
 }
 
-void Solver::density()
+void Solver::density(const double * field)
 {
+    solve_eqn(field);
+    Q = ptnfn();
+    pdf();
 #pragma omp parallel for num_threads(NUM_THREADS)
-  for(int i = 0; i<md; i++)
-  {
-    double tmp=0;
-    double tmp1 = 0;
-    for(int j = 0; j<n; j++)
+    for(int i = 0; i<md; i++)
     {
-      double tmp2=0;
-      double tmp3 =0;
-      for(int k = 0; k<n*n; k++)
-      {
-        tmp2 += f[k+j*n*n+i*n3];
-        tmp3 += f[k+j*n*n+i*n3];
-      }
-      tmp2 *= weights[j];
-      tmp3 *= weights[j];
-      tmp += tmp2;
+        double tmp=0;
+        double tmp1 = 0;
+        for(int j = 0; j<n; j++)
+        {
+            double tmp2=0;
+            double tmp3 =0;
+            for(int k = 0; k<n*n; k++)
+            {
+                tmp2 += f[k+j*n*n+i*n3];
+                tmp3 += f[k+j*n*n+i*n3];
+            }
+            tmp2 *= weights[j];
+            tmp3 *= weights[j];
+            tmp += tmp2;
       tmp1 += tmp3;
     }
     phi[i] = tmp * 4.*bw*M_PI*M_PI/n3;
@@ -419,39 +422,6 @@ double Solver::ptnfn(int s)
   return q;
 }
 
-void Solver::save_pdf(std::string filename){
-  std::ofstream file(filename.c_str());
-  for(int i = 0; i<=md; i++)
-    for(int j = -1; j<=n; j++)
-      for(int k = 0; k<=n; k++)
-        for(int kk = 0; kk<=n; kk++)
-        {
-          int index;
-          if( j == -1)
-            index = ((kk+n/2)%n)+n*((k+n/2)%n)+(i%md)*n3;
-          else if(j == n)
-            index = ((kk+n/2)%n)+n*((k+n/2)%n)+(n-1)*n*n+(i%md)*n3;
-          else
-            index = (kk%n)+n*(k%n)+(j%n)*n*n+(i%md)*n3;
-          file<<f[index]<<std::endl;
-        }
-  file.close();
-  return;
-}
-
-void Solver::read_pdf(std::string filename){
-  std::ifstream file(filename.c_str());
-  for(int i = 0; i<md; i++)
-    for(int j = 0; j<n; j++)
-      for(int k = 0; k<n; k++)
-        for(int kk = 0; kk<n; kk++)
-        {
-          int index = kk+n*k+j*n*n+i*n3;
-          file>>f[index];
-        }
-  file.close();
-  return;
-}
 void Solver::save_data(std::string filename)
 {
   std::ofstream file(filename.c_str());

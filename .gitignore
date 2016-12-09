@@ -8,4 +8,5 @@ test_trans
 test_config
 .kdev4
 scft.kdev4
+*.vts
 

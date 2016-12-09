@@ -27,31 +27,29 @@ template<class TA, class TB>
 class Iterator
 {
     public:
-        Iterator(const Config&);
-        ~Iterator();
-        TA A;
-        TB B;
-        int md;
-        int m[DIM];
-
         void update_field();
         void delta_mu();
+        Iterator(const Config&);
+        ~Iterator();
+        double * mu;
+        double * field;
+        double * dmu;
+        int md;
+        int m[DIM];
+        TA A;
+        TB B;
 
+        void read_field(std::string);
+        void read_mu(std::string);
+    private:
         void print_info();
 
         void quality();
 
         double energy();
         double H;
-
-        double * mu;
-        double * field;
-        double * dmu;
-
         double chiN;
 
-        void read_field(std::string);
-        void read_mu(std::string);
 };
 
     template<class TA, class TB>
@@ -286,7 +284,7 @@ Iterator<TA,TB>::Iterator(const Config & configSettings):
                 /* mu[i+md] = -mu[i]; */
                 /* field[i] = mu[i] - mu[i+md]; */
                 /* field[i+md] = mu[i] + mu[i+md]; */
-                mu[i*m[1]+j] = -.2*cos(2*M_PI*i/m[0]) + .2*cos(2*M_PI*j/m[1]);
+                mu[i*m[1]+j] = -2*cos(2*M_PI*i/m[0]) + .2*cos(2*M_PI*j/m[1]);
                 mu[i*m[1]+j+md] = -mu[i*m[1]+j];
                 field[i*m[1]+j] = mu[i*m[1]+j] - mu[i*m[1]+j+md];
                 field[i*m[1]+j+md] = mu[i*m[1]+j] + mu[i*m[1]+j+md];
@@ -306,16 +304,8 @@ Iterator<TA,TB>::~Iterator()
 template<class TA, class TB>
 void Iterator<TA,TB>::update_field()
 {
-  A.solve_eqn(field);
-  A.Q = A.ptnfn();
-  A.pdf();
-
-  B.solve_eqn(field+md);
-  B.Q = B.ptnfn();
-  B.pdf();
-
-  A.density();
-  B.density();
+  A.density(field);
+  B.density(field+md);
   for(int i = 0;i <md; i++)
   {
     double tmp;
@@ -337,21 +327,13 @@ void Iterator<TA, TB>::delta_mu()
     field[i] = mu[i] - mu[i+md];
     field[i+md] = mu[i] + mu[i+md];
   }
-  A.solve_eqn(field);
-  A.Q = A.ptnfn();
-  A.pdf();
-
-  B.solve_eqn(field+md);
-  B.Q = B.ptnfn();
-  B.pdf();
-
-  A.density();
-  B.density();
+  A.density(field);
+  B.density(field+md);
   double tmp;
   for(int i = 0; i<md; i++)
   {
     dmu[i] = -(A.phi[i]+B.phi[i]-1.);
-    dmu[i+md]= B.phi[i] - A.phi[i] +2*mu[i+md]/chiN;
+    dmu[i+md]= B.phi[i] - A.phi[i] + 2*mu[i+md]/chiN;
   }
   energy();
   print_info();

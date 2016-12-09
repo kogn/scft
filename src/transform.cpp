@@ -68,11 +68,11 @@ Space_trans::Space_trans(const Config & configSettings):Data(configSettings)
   }
   if(DIM == 2){
     dims[0].n = m[0];
-    dims[0].is = n3;
-    dims[0].os = n3;
+    dims[0].is = n3*m[1];
+    dims[0].os = n3*m[1];
     dims[1].n = m[1];
-    dims[1].is = n3*m[0];
-    dims[1].os = n3*m[0];
+    dims[1].is = n3;
+    dims[1].os = n3;
   }
   howmany_dims[0].n = n3;
   howmany_dims[0].is = 1;

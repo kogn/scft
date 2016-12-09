@@ -23,18 +23,24 @@ extern "C" {
 class Solver : public Space_trans, public SO3_trans
 {
     public:
-        static int count;
         Solver(const Config &);
         Solver();
         ~Solver();
-
+        void save_data(std::string);
+        double ptnfn(int s = 0);
         int n_step;
-        double t, dt;
-        void init();
-        void finalize();
 
+        double Q;
+        void density(const double * field);
+        double * phi;
+    private:
+        void solve_eqn(const double *);
+        static int count;
         static double * hist_forward;
         static double * hist_backward;
+
+        double kappa, tau, alpha, beta;
+        fftw_complex gamma[2];
 
         double volume;
         double domain[DIM];
@@ -42,33 +48,19 @@ class Solver : public Space_trans, public SO3_trans
         static fftw_complex * matrix;
         static fftw_complex * matrix1;
 
-        fftw_complex gamma[2];
-
-        void solve_eqn(double *);
-
         void init_data();
-        void onestep(double *);
-
-        double kappa, tau, alpha, beta;
-        void laplace(fftw_complex);
-        void gradient(fftw_complex);
-        void constant(fftw_complex, double *);
-
-        void density();
         void pdf();
         void tensor();
 
-        double ptnfn(int s = 0);
-
-        double Q;
+        double t, dt;
         double * S[6];
-        double * phi;
         double * f;
 
-        void save_data(std::string);
-        void save_pdf(std::string);
-        void read_pdf(std::string);
-        void read_data(std::string);
+        void onestep(const double *);
+        void laplace(fftw_complex);
+        void gradient(fftw_complex);
+        void constant(fftw_complex,const double *);
+
 };
 #endif //__SOLVER_H__
 
