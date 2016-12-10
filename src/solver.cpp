@@ -27,7 +27,7 @@ extern "C" {
 #endif //__cplusplus
 
 #ifndef NUM_THREADS
-#define NUM_THREADS 4
+#define NUM_THREADS 8
 #endif //NUM_THREADS
 
 int Solver::count = 0;

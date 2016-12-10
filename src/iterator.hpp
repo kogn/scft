@@ -18,7 +18,7 @@ extern "C" {
 #endif //__cplusplus
 
 #ifndef NUM_THREADS
-#define NUM_THREADS 4
+#define NUM_THREADS 8
 #endif //NUM_THREADS
 #ifndef DIM 
 #define DIM 1
@@ -140,6 +140,7 @@ void SteepD::solve(T * ob,void (T::*func) (),double*x, double *dx, int n, int ma
         (ob->*func)();
 
         err = 0;
+#pragma omp parallel for num_threads(NUM_THREADS) reduction(+:err)
         for(int i = 0; i<n; i++)
         {
             x[i] -= steplength*dx[i];
@@ -163,6 +164,7 @@ void Picard::solve(T * ob, void (T::*func)(), double * x, int n, int max_steps=2
         memcpy(xcp, x, sizeof(double)*n);
         (ob->*func)();
         err = 0.;
+#pragma omp parallel for num_threads(NUM_THREADS) reduction(+:err)
         for(int i=0; i<n; i++)
         {
             //err = fabs(x[i]-xcp[i])>err?fabs(x[i]-xcp[i]):err;
@@ -284,7 +286,7 @@ Iterator<TA,TB>::Iterator(const Config & configSettings):
                 /* mu[i+md] = -mu[i]; */
                 /* field[i] = mu[i] - mu[i+md]; */
                 /* field[i+md] = mu[i] + mu[i+md]; */
-                mu[i*m[1]+j] = -2*cos(2*M_PI*i/m[0]) + .2*cos(2*M_PI*j/m[1]);
+                mu[i*m[1]+j] = -2*cos(2*M_PI*i/m[0]) + 2*cos(2*M_PI*j/m[1]);
                 mu[i*m[1]+j+md] = -mu[i*m[1]+j];
                 field[i*m[1]+j] = mu[i*m[1]+j] - mu[i*m[1]+j+md];
                 field[i*m[1]+j+md] = mu[i*m[1]+j] + mu[i*m[1]+j+md];
@@ -306,6 +308,7 @@ void Iterator<TA,TB>::update_field()
 {
   A.density(field);
   B.density(field+md);
+#pragma omp parallel for num_threads(NUM_THREADS)
   for(int i = 0;i <md; i++)
   {
     double tmp;
@@ -322,6 +325,7 @@ void Iterator<TA,TB>::update_field()
 template<class TA, class TB>
 void Iterator<TA, TB>::delta_mu()
 {
+#pragma omp parallel for num_threads(NUM_THREADS)
   for(int i = 0; i<md; i++)
   {
     field[i] = mu[i] - mu[i+md];
@@ -330,6 +334,7 @@ void Iterator<TA, TB>::delta_mu()
   A.density(field);
   B.density(field+md);
   double tmp;
+#pragma omp parallel for num_threads(NUM_THREADS)
   for(int i = 0; i<md; i++)
   {
     dmu[i] = -(A.phi[i]+B.phi[i]-1.);
@@ -343,12 +348,14 @@ template<class TA, class TB>
 double Iterator<TA,TB>::energy()
 {
   H = 0;
+  double h = 0;
+#pragma omp parallel for num_threads(NUM_THREADS) reduction(+:h)
   for(int i = 0; i<md; i++)
   {
-    H += -mu[i] + mu[i+md]*mu[i+md]/chiN;
+    h += -mu[i] + mu[i+md]*mu[i+md]/chiN;
   }
-  H /= md;
-  H -= (log(A.Q) + log(B.Q))/2;
+  h /= md;
+  H = h- (log(A.Q) + log(B.Q))/2;
   return H;
 }
 
@@ -357,6 +364,7 @@ template<class TA, class TB>
 void Iterator<TA,TB>::print_info()
 {
     double quality= 0.;
+#pragma omp parallel for num_threads(NUM_THREADS) reduction(+:quality)
     for(int i = 0; i<md; i++)
     {
         quality += A.phi[i] + B.phi[i];

@@ -16,6 +16,7 @@ extern "C" {
 #include <soft/utils_so3.h>
 #include <soft/soft_fftw_pc.h>
 #include <soft/csecond.h>
+#include<omp.h>
 
 #ifdef __cplusplus
 }
@@ -26,7 +27,7 @@ extern "C" {
 #endif
 
 #ifndef NUM_THREADS
-#define NUM_THREADS 4
+#define NUM_THREADS 8
 #endif //NUM_THREADS
 
 #include "transform.h"
@@ -197,6 +198,7 @@ void SO3_trans::for_so3()
   for(int i = 0; i<md; i++)
   {
     int thread_num = omp_get_thread_num();
+      //std::cout<<omp_get_thread_num()<<" "<<NUM_THREADS<<" " << omp_get_num_threads()<<std::endl;
     Forward_SO3_Naive_fftw_pc( bw,
         realdata+i*n3,
         spectdata+i*n_coeff,

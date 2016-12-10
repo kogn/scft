@@ -13,7 +13,7 @@ OPTS=-Ofast
 LDFLAGS=
 LIB= -L ../lib/
 COMMON=  -I ../include/
-CFLAGS=  -DNUM_THREADS=4 -DDIM=${DIM}
+CFLAGS=  -DNUM_THREADS=8 -DDIM=${DIM} -fopenmp
 
 
 ifeq ($(DEBUG), 1)
@@ -42,7 +42,7 @@ COMMON += -I ${MATHEMATICA_DIR}/SystemFiles/Links/WSTP/DeveloperKit/Linux-x86-64
 LIB += -L ${MATHEMATICA_DIR}/SystemFiles/Links/WSTP/DeveloperKit/Linux-x86-64/CompilerAdditions/ \
 	   -L${MATHEMATICA_DIR}/SystemFiles/Libraries/Linux-x86-64
 
-LDFLAGS += -lopenblas  -lWSTP64i4 -lrt  -ldl -luuid  -lm -fopenmp
+LDFLAGS += -lopenblas  -lWSTP64i4 -lrt  -ldl -luuid  -lm
 
 OBJS = $(patsubst %.c,%.o,$(addprefix $(OBJDIR), $(notdir $(wildcard $(SRCDIR)*.c))))
 OBJS += $(patsubst %.cpp,%.o,$(addprefix $(OBJDIR), $(notdir $(wildcard $(SRCDIR)*.cpp))))

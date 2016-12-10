@@ -6,6 +6,9 @@
 #define DIM 1
 #endif
 
+#ifndef NUM_THREADS
+#define NUM_THREADS 8
+#endif
 Particle::Particle(const Config & configSettings){
     m[0] = configSettings.Read<int>("Grid_Size_x");
     domain[0] = configSettings.Read<int>("domain0");

@@ -12,7 +12,7 @@ extern "C" {
 #include<string>
 
 #ifndef NUM_THREADS
-#define NUM_THREADS 4
+#define NUM_THREADS 8
 #endif //NUM_THREADS
 #ifndef DIM 
 #define DIM  1
