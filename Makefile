@@ -17,7 +17,7 @@ CFLAGS=  -DNUM_THREADS=8 -DDIM=${DIM} -fopenmp
 
 
 ifeq ($(DEBUG), 1)
-  OPTS=-O0 -g
+	OPTS=-O0 -g
 endif 
 
 CFLAGS+=$(OPTS)
@@ -31,12 +31,12 @@ all: obj data $(EXEC)
 LDFLAGS += -llapacke -lsoft1
 
 ifeq ($(MKL), 1)
-  CFLAGS+= -DMKL
-  COMMON += -I ${INTEL_DIR}/mkl/include/ -I ${INTEL_DIR}/mkl/include/fftw/
-  LIB += -L ${INTEL_DIR}/interfaces/fftw3xc -L ${INTEL_DIR}/mkl/lib/intel64/
-  LDFLAGS += -lfftw3xc_gnu -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread
+	CFLAGS+= -DMKL
+	COMMON += -I ${INTEL_DIR}/mkl/include/ -I ${INTEL_DIR}/mkl/include/fftw/
+	LIB += -L ${INTEL_DIR}/interfaces/fftw3xc -L ${INTEL_DIR}/mkl/lib/intel64/
+	LDFLAGS += -lfftw3xc_gnu -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread
 else
-  LDFLAGS += -lfftw3_omp -lfftw3 
+	LDFLAGS += -lfftw3_omp -lfftw3 
 endif
 COMMON += -I ${MATHEMATICA_DIR}/SystemFiles/Links/WSTP/DeveloperKit/Linux-x86-64/CompilerAdditions/
 LIB += -L ${MATHEMATICA_DIR}/SystemFiles/Links/WSTP/DeveloperKit/Linux-x86-64/CompilerAdditions/ \

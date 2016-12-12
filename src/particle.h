@@ -8,6 +8,7 @@
 
 class Particle{
     public:
+        double nB;
         int m[DIM];
         int md;
         double volume;

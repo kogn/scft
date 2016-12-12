@@ -31,6 +31,7 @@ class Solver : public Space_trans, public SO3_trans
         int n_step;
 
         double Q;
+        double nA;
         void density(const double * field);
         double * phi;
     private:

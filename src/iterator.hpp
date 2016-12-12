@@ -355,7 +355,7 @@ double Iterator<TA,TB>::energy()
     h += -mu[i] + mu[i+md]*mu[i+md]/chiN;
   }
   h /= md;
-  H = h- (log(A.Q) + log(B.Q))/2;
+  H = h- (log(A.Q)*A.nA + log(B.Q)*B.nB);
   return H;
 }
 

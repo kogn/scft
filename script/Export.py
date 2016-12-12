@@ -127,18 +127,18 @@ w = tvtk.XMLStructuredGridWriter(input=sgrid, file_name='Cl.vts')
 w.write()
 '''
 
-dims = (32, 32, 1)
+dims = (64, 64, 1)
 sgrid_v = tvtk.StructuredGrid(dimensions=dims)
 
 ################################################################################文件名
-file1 = open("data/Param_2_2_0_0","r")
+file1 = open("data/hpParam_2_2_10_5_6_2_2","r")
 ################################################################################
 records1 = file1.readlines()
 file1.close()
 vct2,pts2,tensor = [[],[],[]]
 i = 0;
 for line in records1:
-    pts2.append([i/32,i%32,0])
+    pts2.append([i/64,i%64,0])
     i = i+1;
     #pts2.append([float(line.split(" ")[0]),float(line.split(" ")[1]),float(line.split(" ")[2])])
     linesp= line.split()

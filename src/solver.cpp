@@ -38,6 +38,7 @@ double * Solver::hist_forward = NULL;
 Solver::Solver(const Config & configSettings):
     Space_trans(configSettings),SO3_trans(configSettings),Data(configSettings)
 {
+    nA = configSettings.Read<double>("nA");
     n_step = configSettings.Read<int>("Steps_on_chain");
     alpha = configSettings.Read<double>("alpha");
     beta = configSettings.Read<double>("beta");
@@ -289,7 +290,7 @@ void Solver::solve_eqn(const double * field)
 void Solver::pdf()
 {
     double tmp;
-    tmp = dt/(8.*M_PI*M_PI*Q);
+    tmp = dt/(16.*M_PI*M_PI*Q*nA);
     double * func = f;
 
 #pragma omp parallel for num_threads(NUM_THREADS)
