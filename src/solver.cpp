@@ -290,7 +290,7 @@ void Solver::solve_eqn(const double * field)
 void Solver::pdf()
 {
     double tmp;
-    tmp = dt/(16.*M_PI*M_PI*Q*nA);
+    tmp = dt*nA*2./(8.*M_PI*M_PI*Q);
     double * func = f;
 
 #pragma omp parallel for num_threads(NUM_THREADS)
