@@ -6,6 +6,7 @@
 #include "Config.h"
 #include "solver.h"
 #include "particle.h"
+#include "kpsolver.h"
 
 #ifndef DIM
 #define DIM 1
@@ -36,12 +37,12 @@ int main(int argc, char * argv[])
     /* } */
 
 
-    void (Iterator<Solver,Particle>::*fp)();
-    void (Iterator<Solver,Particle>::*fp2)();
-    fp = &Iterator<Solver,Particle>::update_field;
-    fp2 = &Iterator<Solver,Particle>::delta_mu;
-    Iterator<Solver,Particle> test(configSettings);
-    Iterator<Solver,Particle> * obp=&test;
+    void (Iterator<KPSolver,Particle>::*fp)();
+    void (Iterator<KPSolver,Particle>::*fp2)();
+    fp = &Iterator<KPSolver,Particle>::update_field;
+    fp2 = &Iterator<KPSolver,Particle>::delta_mu;
+    Iterator<KPSolver,Particle> test(configSettings);
+    Iterator<KPSolver,Particle> * obp=&test;
 
     //test.read_mu(input_filedir+input_filename);
 

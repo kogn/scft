@@ -25,7 +25,7 @@ CFLAGS+=$(OPTS)
 .PHONY: clean all
 
 VPATH=./src/
-EXEC = test_solver test_trans main test_config
+EXEC = test_solver test_trans main test_config test_s2trans test_kpsolver
 all: obj data $(EXEC)
 
 LDFLAGS += -llapacke -lsoft1
@@ -48,6 +48,11 @@ OBJS = $(patsubst %.c,%.o,$(addprefix $(OBJDIR), $(notdir $(wildcard $(SRCDIR)*.
 OBJS += $(patsubst %.cpp,%.o,$(addprefix $(OBJDIR), $(notdir $(wildcard $(SRCDIR)*.cpp))))
 DEPS = $(wildcard $(SRCDIR)*.h $(SRCDIR)*.hpp) Makefile
 
+test_kpsolver: $(filter-out $(addprefix $(OBJDIR),$(filter-out test_kpsolver.o,$(addsuffix .o,$(EXEC)))),$(OBJS))
+	$(CXX) $(COMMON) $(CFLAGS) $^ $(LIB) $(LDFLAGS) -o $@ 
+
+test_s2trans: $(filter-out $(addprefix $(OBJDIR),$(filter-out test_s2trans.o,$(addsuffix .o,$(EXEC)))),$(OBJS))
+	$(CXX) $(COMMON) $(CFLAGS) $^ $(LIB) $(LDFLAGS) -o $@ 
 
 test_config : test_config.cpp Config.cpp Config.h 
 	$(CXX) $(filter-out %.h,$^) -o $@

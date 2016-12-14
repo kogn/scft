@@ -1,7 +1,7 @@
 #include <iostream>
 #include <cstdlib>
 #include <cstdio>
-#include "solver.h"
+#include "kpsolver.h"
 #include "Config.h"
 #include <cmath>
 
@@ -14,7 +14,7 @@ int main(int argc, char * argv[])
     }
     Config configSettings(argv[1]);
 
-    Solver test(configSettings);
+    KPSolver test(configSettings);
 
     double * field = (double *)malloc(sizeof(double)*test.md*2);
     double * mu= (double *)malloc(sizeof(double)*test.md*2);
@@ -41,7 +41,6 @@ int main(int argc, char * argv[])
           field[i*test.m[1]+j+md] = mu[i*test.m[1]+j] + mu[i*test.m[1]+j+md];
         }
     }
-
     test.density(field);
 
 

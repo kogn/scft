@@ -1,11 +1,11 @@
 #ifndef __ITERATOR_H__
 #define __ITERATOR_H__
 
-#include "solver.h"
 #include <cmath>
 #include <sstream>
 #include <string>
 #include <fstream>
+#include "Config.h"
 
 #ifdef __cplusplus 
 extern "C" {

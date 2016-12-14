@@ -1,42 +1,34 @@
-#include <cstdlib>
 #include <cmath>
-#include "solver.h"
 #include <iostream>
-#include <fstream>
-#include <string>
+
+#include "kpsolver.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif //__cplusplus
 #include <fftw3.h>
-#include <memory.h>
+#include <lapacke.h>
 #include "matrix.h"
 #include <cblas.h>
 
-#include <soft/makeweights.h>
-#include <soft/makeWigner.h>
-#include <soft/utils_so3.h>
-#include <soft/soft_fftw_pc.h>
-#include <soft/csecond.h>
-#include <omp.h>
-#include <sys/time.h>
-#include "timer.h"
+#include <s2kit/makeweights.h>
+#include <s2kit/cospmls.h>
+#include <s2kit/FST_semi_memo.h>
+#include <s2kit/csecond.h>
 
+#include <soft/utils_so3.h>
+
+#include <omp.h>
 #ifdef __cplusplus
 }
 #endif //__cplusplus
 
-#ifndef NUM_THREADS
-#define NUM_THREADS 8
-#endif //NUM_THREADS
-
-int Solver::count = 0;
-fftw_complex * Solver::matrix = NULL;
-fftw_complex * Solver::matrix1 = NULL;
-double * Solver::hist_forward = NULL;
-//double * Solver::hist_backward = NULL;
-Solver::Solver(const Config & configSettings):
-    Space_trans(configSettings),SO3_trans(configSettings),Data(configSettings)
+int KPSolver::count = 0;
+fftw_complex * KPSolver::matrix = NULL;
+fftw_complex * KPSolver::matrix1 = NULL;
+double * KPSolver::hist_forward = NULL;
+KPSolver::KPSolver(const Config & configSettings):
+    S2_Space_trans(configSettings),S2_trans(configSettings),S2Data(configSettings)
 {
     nA = configSettings.Read<double>("nA");
     n_step = configSettings.Read<int>("Steps_on_chain");
@@ -51,23 +43,19 @@ Solver::Solver(const Config & configSettings):
     {
         S[i] = S[0] + md*i;
     }
-    f = (double *)malloc(sizeof(double)*md*n3);
+    f = (double *)malloc(sizeof(double)*md*n2);
     dt = 1./n_step;
     gamma[0][0] = 0.324396404020171225;
     gamma[0][1] = 0.134586272490806680;
     gamma[1][0] = 0.351207191959657661;
     gamma[1][1] = -0.269172544981613415;
-    /* gamma[0][0] = 1./3; */
-    /* gamma[0][1] = 0.; */
-    /* gamma[1][0] = 1./3; */
-    /* gamma[1][1] = 0; */
     if(count == 0){
         matrix = (fftw_complex *)fftw_malloc(sizeof(fftw_complex)*totalCoeffs_so3(bw));
         matrix1 = (fftw_complex *)fftw_malloc(sizeof(fftw_complex)*totalCoeffs_so3(bw));
         getmatrix(bw,alpha,beta,kappa,tau,gamma, dt,matrix,matrix1);
         count ++;
-        hist_forward = (double *) malloc(sizeof(double)*md*n3*(n_step+1));
-        //hist_backward= (double *) malloc(sizeof(double)*md*n3*(n_step+1));
+        hist_forward = (double *) malloc(sizeof(double)*md*n2*(n_step+1));
+        //hist_backward= (double *) malloc(sizeof(double)*md*n2*(n_step+1));
     }
 
     domain[0] = configSettings.Read<double>("domain0");
@@ -76,19 +64,19 @@ Solver::Solver(const Config & configSettings):
     }
 }
 
-
-void Solver::init_data()
+void KPSolver::init_data()
 {
-  t = 0.;
+    t = 0.;
 #pragma omp parallel for num_threads(NUM_THREADS)
-  for(int i = 0; i<n3*md; i++)
-  {
-    realdata[i][0] = 1;
-    realdata[i][1] = 0;
-  }
-  return;
+    for(int i = 0; i<n2*md; i++)
+    {
+        realdata0[i] = 1;
+        realdata1[i] = 0;
+    }
+    return;
 }
-Solver::~Solver()
+
+KPSolver::~KPSolver()
 {
     if(count == 1){
         free(hist_forward);
@@ -102,7 +90,7 @@ Solver::~Solver()
     free(f);
 }
 
-void Solver::onestep(const double * field)
+void KPSolver::onestep(const double * field)
 {
   fftw_complex dt_gamma0_2 = {dt*gamma[0][0]/2,dt*gamma[0][1]/2};
   fftw_complex dt_gamma0 = {dt*gamma[0][0],dt*gamma[0][1]};
@@ -113,9 +101,9 @@ void Solver::onestep(const double * field)
   constant(dt_gamma0_2, field);
   for_space();
   gradient(dt_gamma0_2);
-  for_so3();
+  for_s2();
   laplace(dt_gamma0);
-  inv_so3();
+  inv_s2();
   gradient(dt_gamma0_2);
   inv_space();
   constant(dt_gamma0_2, field);
@@ -124,9 +112,9 @@ void Solver::onestep(const double * field)
   constant(dt_gamma1_2, field);
   for_space();
   gradient(dt_gamma1_2);
-  for_so3();
+  for_s2();
   laplace(dt_gamma1);
-  inv_so3();
+  inv_s2();
   gradient(dt_gamma1_2);
   inv_space();
   constant(dt_gamma1_2, field);
@@ -134,13 +122,13 @@ void Solver::onestep(const double * field)
   constant(dt_gamma0_2, field);
   for_space();
   gradient(dt_gamma0_2);
-  for_so3();
+  for_s2();
   laplace(dt_gamma0);
-  inv_so3();
+  inv_s2();
   gradient(dt_gamma0_2);
   inv_space();
   constant(dt_gamma0_2, field);
-  /* for(int i = 0; i<md*n3; i++){ */
+  /* for(int i = 0; i<md*n2; i++){ */
   /*     //realdata[i][0] = sqrt(realdata[i][0]*realdata[i][0]+realdata[i][1]*realdata[i][1]); */
   /*     //realdata[i][0] = fabs(realdata[i][0]); */
   /*     //realdata[i][1] = 0.; */
@@ -149,7 +137,8 @@ void Solver::onestep(const double * field)
   t += dt;
 }
 
-void Solver::constant(fftw_complex dt,const double * field)
+
+void KPSolver::constant(fftw_complex dt,const double * field)
 {
 #pragma omp parallel for num_threads(NUM_THREADS)
   for(int i = 0; i<md; i++)
@@ -157,18 +146,18 @@ void Solver::constant(fftw_complex dt,const double * field)
     double expw = exp(-field[i]*dt[0]);
     double cosw = cos(-field[i]*dt[1]);
     double sinw = sin(-field[i]*dt[1]);
-    for(int j = 0; j<n3; j++)
+    for(int j = 0; j<n2; j++)
     {
-      double real = realdata[i*n3+j][0];
-      double imag = realdata[i*n3+j][1];
-      realdata[i*n3+j][0] = expw*(cosw*real - sinw*imag);
-      realdata[i*n3+j][1] = expw*(cosw*imag + sinw*real);
+      double real = realdata0[i*n2+j];
+      double imag = realdata1[i*n2+j];
+      realdata0[i*n2+j] = expw*(cosw*real - sinw*imag);
+      realdata1[i*n2+j] = expw*(cosw*imag + sinw*real);
     }
   }
   return;
 }
 #if DIM == 1
-void Solver::gradient(fftw_complex dt)
+void KPSolver::gradient(fftw_complex dt)
 {
 #pragma omp parallel for num_threads(NUM_THREADS)
     for(int i=0; i<md; i++)
@@ -183,21 +172,18 @@ void Solver::gradient(fftw_complex dt)
             double ex = exp(-tmp1*index2);
             for(int k = 0; k<n; k++)
             {
-                for(int l = 0; l<n; l++)
-                {
-                    int index = i*n3+n*n*j+n*k+l;
-                    double real = realdata[index][0];
-                    double imag = realdata[index][1];
-                    realdata[index][0] = (co*real - si*imag)*ex;
-                    realdata[index][1] = (co*imag + si*real)*ex;
-                }
+                int index = i*n2+n*j+k;
+                double real = realdata0[index];
+                double imag = realdata1[index];
+                realdata0[index] = (co*real - si*imag)*ex;
+                realdata1[index] = (co*imag + si*real)*ex;
             }
         }
     }
     return;
 }
 #elif DIM == 2
-void Solver::gradient(fftw_complex dt)
+void KPSolver::gradient(fftw_complex dt)
 {
 #pragma omp parallel for num_threads(NUM_THREADS)
     for(int i=0; i<m[0]; i++)
@@ -216,14 +202,11 @@ void Solver::gradient(fftw_complex dt)
                     double co = cos(index0*tmp00+index1*tmp10);
                     double si = sin(index0*tmp00+index1*tmp10);
                     double ex = exp(-tmp01*index0-tmp11*index1);
-                    for(int l = 0; l<n; l++)
-                    {
-                        int index = (i*m[1]+i1)*n3+n*n*j+n*k+l;
-                        double real = realdata[index][0];
-                        double imag = realdata[index][1];
-                        realdata[index][0] = (co*real - si*imag)*ex;
-                        realdata[index][1] = (co*imag + si*real)*ex;
-                    }
+                    int index = (i*m[1]+i1)*n2+n*j+k;
+                    double real = realdata0[index];
+                    double imag = realdata1[index];
+                    realdata0[index] = (co*real - si*imag)*ex;
+                    realdata1[index] = (co*imag + si*real)*ex;
                 }
             }
         }
@@ -232,7 +215,7 @@ void Solver::gradient(fftw_complex dt)
 }
 #endif
 
-void Solver::laplace(fftw_complex dt)
+void KPSolver::laplace(fftw_complex dt)
 {
     fftw_complex * ptr;
     if(dt[1] > 0)
@@ -241,82 +224,72 @@ void Solver::laplace(fftw_complex dt)
         ptr = matrix1;
 #pragma omp parallel for num_threads(NUM_THREADS)
     for(int i = 0; i<md; i++)
-    {
         for(int l = 0; l<bw; l++)
-        {
-            int number = totalCoeffs_so3(l);
             for(int j = -l; j<=l; j++)
-                for(int k = -l; k<=l; k++)
-                {
-                    double real = 0.;
-                    double imag = 0.;
-                    for(int kk = -l;kk<=l;kk++)
-                    {
-                        int index = so3CoefLoc(j,kk,l,bw) + i*n_coeff;
-                        int index2 = number +(k+l)*(2*l+1)+kk+l;
-                        real+=ptr[index2][0]*spectdata[index][0]
-                            -ptr[index2][1]*spectdata[index][1];
-                        imag+=ptr[index2][0]*spectdata[index][1]
-                            +ptr[index2][1]*spectdata[index][0];
-                    }
-                    spectdata[n_coeff*i+so3CoefLoc(j,k,l,bw)][0] = real;
-                    spectdata[n_coeff*i+so3CoefLoc(j,k,l,bw)][1] = imag;
-                }
-        }
-    }
+            {
+                int number = totalCoeffs_so3(l);
+                int index = number+(j+l)*(2*l+1)+j+l;
+                int index2 = n_coeff*i + seanindex(j,l,bw);
+                spectdata0[index2]=ptr[index][0]*spectdata0[index2]
+                    -ptr[index][1]*spectdata1[index2];
+                spectdata1[index2]=ptr[index][0]*spectdata1[index2]
+                    +ptr[index][1]*spectdata0[index2];
+            }
     return;
 }
 
-void Solver::solve_eqn(const double * field)
+
+void KPSolver::solve_eqn(const double * field)
 {
   init_data();
 
 #pragma omp parallel for num_threads(NUM_THREADS)
-  for(int j = 0; j<md*n3; j++)
+  for(int j = 0; j<md*n2; j++)
     hist_forward[j] = 1.;
 
   for(int i = 1; i<n_step+1; i++)
   {
     onestep(field);
-    cblas_dcopy(md*n3,realdata[0],2,hist_forward+i*md*n3,1);
+    cblas_dcopy(md*n2,realdata0,1,hist_forward+i*md*n2,1);
 /* #pragma omp parallel for num_threads(NUM_THREADS) */
-/*     for(int j = 0; j<md*n3; j++) */
+/*     for(int j = 0; j<md*n2; j++) */
 /*     { */
-/*       hist_forward[j+i*md*n3] = realdata[j][0]; */
+/*       hist_forward[j+i*md*n2] = realdata[j][0]; */
 /*     } */
   }
   return;
 }
 
-void Solver::pdf()
+
+
+void KPSolver::pdf()
 {
     double tmp;
-    tmp = dt*nA*2./(8.*M_PI*M_PI*Q);
+    tmp = dt*nA*2./(4.*M_PI*Q);
     double * func = f;
 
 #pragma omp parallel for num_threads(NUM_THREADS)
   for(int i = 0; i<md; i++)
     for(int j = 0; j<n; j++)
       for(int k = 0; k<n; k++)
-        for(int kk = 0; kk<n; kk++)
         {
-          int index = kk+n*k+j*n*n+i*n3;
-          int index2 = (n-kk)%n+((n/2+k)%n)*n+(n-j-1)*n*n+i*n3;
-          func[index] = 3./8*(hist_forward[md*n3*n_step+index2]+hist_forward[md*n3*n_step+index]);
-          func[index] += 7./6*(hist_forward[md*n3*(n_step-1)+index2]*hist_forward[md*n3*1+index]
-              +hist_forward[md*n3*1+index2]*hist_forward[md*n3*(n_step-1)+index]);
-          func[index] += 23./24*(hist_forward[md*n3*(n_step-2)+index2]*hist_forward[md*n3*2+index]
-              +hist_forward[md*n3*2+index2]*hist_forward[md*n3*(n_step-2)+index]);
+          int index = k+j*n+i*n2;
+          int index2 = ((n/2+k)%n)+(n-j-1)*n+i*n2;
+          func[index] = 3./8*(hist_forward[md*n2*n_step+index2]+hist_forward[md*n2*n_step+index]);
+          func[index] += 7./6*(hist_forward[md*n2*(n_step-1)+index2]*hist_forward[md*n2*1+index]
+              +hist_forward[md*n2*1+index2]*hist_forward[md*n2*(n_step-1)+index]);
+          func[index] += 23./24*(hist_forward[md*n2*(n_step-2)+index2]*hist_forward[md*n2*2+index]
+              +hist_forward[md*n2*2+index2]*hist_forward[md*n2*(n_step-2)+index]);
           for(int ii = 3; ii<n_step-2; ii++)
           {
-            func[index] += hist_forward[md*n3*ii+index]*hist_forward[md*n3*(n_step-ii)+index2];
+            func[index] += hist_forward[md*n2*ii+index]*hist_forward[md*n2*(n_step-ii)+index2];
           }
           func[index] = func[index]*tmp;
         }
   return;
 }
 
-void Solver::density(const double * field)
+void KPSolver::density(const double * field)
 {
     solve_eqn(field);
     Q = ptnfn();
@@ -330,23 +303,23 @@ void Solver::density(const double * field)
         {
             double tmp2=0;
             double tmp3 =0;
-            for(int k = 0; k<n*n; k++)
+            for(int k = 0; k<n; k++)
             {
-                tmp2 += f[k+j*n*n+i*n3];
-                tmp3 += f[k+j*n*n+i*n3];
+                tmp2 += f[k+j*n+i*n2];
+                tmp3 += f[k+j*n+i*n2];
             }
             tmp2 *= weights[j];
             tmp3 *= weights[j];
             tmp += tmp2;
       tmp1 += tmp3;
     }
-    phi[i] = tmp * 4.*bw*M_PI*M_PI/n3;
-    phi[i] = tmp1 * 4.*bw*M_PI*M_PI/n3;
+    phi[i] = tmp * 2.*bw*M_PI/n2;
+    phi[i] = tmp1 * 2.*bw*M_PI/n2;
   }
   return;
 }
 
-void Solver::tensor()
+void KPSolver::tensor()
 {
 #pragma omp parallel for num_threads(NUM_THREADS)
   for(int i = 0; i<md; i++)
@@ -360,71 +333,66 @@ void Solver::tensor()
     }
     for(int j = 0; j<n; j++)
     {
-      double wt = weights[j];
-      double s1 = sin(M_PI*(2*j+1)/4./bw);
-      double c1 = cos(M_PI*(2*j+1)/4./bw);
-      for(int k = 0; k<n; k++)
-      {
-        double c2 = cos(2*M_PI*k/n);
-        double s2 = sin(2*M_PI*k/n);
-        double m1 = c2*s1;
-        double m2 = s2*s1;
-        double m3 = c1;
-        for(int l = 0; l<n; l++){
-          int index =l+ k*n+j*n*n+i*n3;
+        double wt = weights[j];
+        double s1 = sin(M_PI*(2*j+1)/4./bw);
+        double c1 = cos(M_PI*(2*j+1)/4./bw);
+        for(int k = 0; k<n; k++)
+        {
+            double c2 = cos(2*M_PI*k/n);
+            double s2 = sin(2*M_PI*k/n);
+            double m1 = c2*s1;
+            double m2 = s2*s1;
+            double m3 = c1;
+            int index =k+j*n+i*n2;
 
-          tmp[0] += f[index]*(m1*m1-1./3)*wt;
+            tmp[0] += f[index]*(m1*m1-1./3)*wt;
 
-          tmp[1] += f[index]*(m2*m2-1./3)*wt;
+            tmp[1] += f[index]*(m2*m2-1./3)*wt;
 
-          tmp[2] += f[index]*(m3*m3-1./3)*wt;
+            tmp[2] += f[index]*(m3*m3-1./3)*wt;
 
-          tmp[3] += f[index]*m1*m2*wt;
+            tmp[3] += f[index]*m1*m2*wt;
 
-          tmp[4] += f[index]*m1*m3*wt;
+            tmp[4] += f[index]*m1*m3*wt;
 
-          tmp[5] += f[index]*m2*m3*wt;
+            tmp[5] += f[index]*m2*m3*wt;
         }
-      }
     }
     for(int a = 0; a<6; a++)
     {
-      S[a][i] = tmp[a] * 8.*bw*M_PI*M_PI/n3;
+        S[a][i] = tmp[a] *4.*bw*M_PI/n2;
     }
   }
   return;
 }
 
-double Solver::ptnfn(int s)
+double KPSolver::ptnfn(int s)
 {
   double q = 0;
-  double * ptr = hist_forward+md*n3*s;
-  double * ptr2 = hist_forward+md*n3*(n_step-s);
-  //double * ptr3 = hist_backward+md*n3*s;
-  //double * ptr4 = hist_backward+md*n3*(n_step-s);
+  double * ptr = hist_forward+md*n2*s;
+  double * ptr2 = hist_forward+md*n2*(n_step-s);
+  //double * ptr3 = hist_backward+md*n2*s;
+  //double * ptr4 = hist_backward+md*n2*(n_step-s);
 #pragma omp parallel for num_threads(NUM_THREADS) reduction(+:q)
   for(int i = 0; i<md; i++)
   {
     double tmp1=0;
     for(int j = 0; j<n; j++)
     {
-      double tmp2=0;
-      for(int k = 0; k<n; k++)
-        for(int kk = 0; kk<n; kk++)
-        {
-          tmp2 += ptr[kk+n*k+j*n*n+i*n3]*ptr2[(n-kk)%n+((n/2+k)%n)*n+(n-j-1)*n*n+i*n3];
-          //+ ptr3[kk+n*k+j*n*n+i*n3]*ptr4[(n-kk)%n+(n/2+k)%n*n+(n-j-1)*n*n+i*n3];
-        }
-      tmp2 *= weights[j];
-      tmp1 += tmp2;
+        double tmp2=0;
+        for(int k = 0; k<n; k++)
+            tmp2 += ptr[k+j*n+i*n2]*ptr2[((n/2+k)%n)+(n-j-1)*n+i*n2];
+        //+ ptr3[kk+n*k+j*n*n+i*n2]*ptr4[(n-kk)%n+(n/2+k)%n*n+(n-j-1)*n*n+i*n2];
+        tmp2 *= weights[j];
+        tmp1 += tmp2;
     }
     q += tmp1;
   }
-  q = q*bw/(md*n3);
+  q = q*bw/(md*n2);
   return q;
 }
 
-void Solver::save_data(std::string filename)
+void KPSolver::save_data(std::string filename)
 {
   std::ofstream file(filename.c_str());
   tensor();
@@ -438,3 +406,4 @@ void Solver::save_data(std::string filename)
   file.close();
   return;
 }
+

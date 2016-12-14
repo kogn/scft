@@ -9,4 +9,5 @@ test_config
 .kdev4
 scft.kdev4
 *.vts
-
+test_kpsolver
+test_s2trans
