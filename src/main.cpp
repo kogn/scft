@@ -44,22 +44,20 @@ int main(int argc, char * argv[])
     Iterator<KPSolver,Particle> test(configSettings);
     Iterator<KPSolver,Particle> * obp=&test;
 
-    //test.read_mu(input_filedir+input_filename);
+    test.read_mu(input_filedir+input_filename);
+    //test.read_field(input_filedir+input_filename);
 
     Picard pc;
     SteepD sd(output_filedir+output_filename);
-    Anderson ad;
-
+    Anderson ad(output_filedir+output_filename);
     //pc.solve(obp,fp,test.field,test.md*2);
 
 
-    //sd.read_data2("./data/SteepD_20", test.mu, test.m[0]*2, test.m[1]);
-    //sd.read_data("./data/SteepD_20", test.mu, test.md*2);
-    sd.solve(obp,fp2,test.mu,test.dmu,test.md*2,max_steps);
+    /* sd.solve(obp,fp2,test.mu,test.dmu,test.md*2,max_steps); */
+    ad.solve(obp,fp,test.field,test.md*2,max_steps);
     test.A.save_data(output_filedir+param_filename);
 
 
-    /* ad.solve(obp,fp,test.field,test.md*2,20); */
 
   return 0;
 }

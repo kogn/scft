@@ -209,10 +209,10 @@ void Solver::gradient(fftw_complex dt)
             {
                 for(int k = 0; k<n; k++)
                 {
-                    double tmp00 = -sin(M_PI*(2*j+1)/4./bw)*sin(2*M_PI*k/n)*2.*M_PI/domain[0]*dt[0];
-                    double tmp01 = -sin(M_PI*(2*j+1)/4./bw)*sin(2*M_PI*k/n)*2.*M_PI/domain[0]*dt[1];
-                    double tmp10 = -sin(M_PI*(2*j+1)/4./bw)*cos(2*M_PI*k/n)*2.*M_PI/domain[1]*dt[0];
-                    double tmp11 = -sin(M_PI*(2*j+1)/4./bw)*cos(2*M_PI*k/n)*2.*M_PI/domain[1]*dt[1];
+                    double tmp00 = -sin(M_PI*(2*j+1)/4./bw)*cos(2*M_PI*k/n)*2.*M_PI/domain[0]*dt[0];
+                    double tmp01 = -sin(M_PI*(2*j+1)/4./bw)*cos(2*M_PI*k/n)*2.*M_PI/domain[0]*dt[1];
+                    double tmp10 = -sin(M_PI*(2*j+1)/4./bw)*sin(2*M_PI*k/n)*2.*M_PI/domain[1]*dt[0];
+                    double tmp11 = -sin(M_PI*(2*j+1)/4./bw)*sin(2*M_PI*k/n)*2.*M_PI/domain[1]*dt[1];
                     double co = cos(index0*tmp00+index1*tmp10);
                     double si = sin(index0*tmp00+index1*tmp10);
                     double ex = exp(-tmp01*index0-tmp11*index1);

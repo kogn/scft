@@ -28,7 +28,7 @@ VPATH=./src/
 EXEC = test_solver test_trans main test_config test_s2trans test_kpsolver
 all: obj data $(EXEC)
 
-LDFLAGS += -llapacke -lsoft1
+LDFLAGS += -llapacke -lsoft1 -ls2kit
 
 ifeq ($(MKL), 1)
 	CFLAGS+= -DMKL

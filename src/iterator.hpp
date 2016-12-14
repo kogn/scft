@@ -86,7 +86,11 @@ void Iterator<TA,TB>::read_mu(std::string s)
 class Anderson 
 {
     public:
-        Anderson();
+        void read_data(std::string filename, double * data, int length);
+        void read_data2(std::string filename, double * data, int length, int times);
+        void save_data(std::string filename, double * data, int length);
+        std::string output_fileprefix;
+        Anderson(std::string s);
         template<class T>
             void solve(T * ob,void (T::*func) (),double* ,int, int);
     private:
@@ -201,6 +205,7 @@ void Anderson::solve(T * ob,void (T::*func) (),double* y ,int n, int max_steps=2
     }
 
     do{
+        std::cout<<"The "<<n_iters<<"th step:" <<std::endl;
         int n_mod = n_iters%mk;
         err = 0.;
         memcpy(x[n_mod],y,sizeof(double)*n);
@@ -236,7 +241,8 @@ void Anderson::solve(T * ob,void (T::*func) (),double* y ,int n, int max_steps=2
             }
         }
         n_iters ++;
-        std::cout<<"The "<<n_iters<<"th step, "<<"error = "<< err <<std::endl;
+        std::cout<<"Time = "<< timer()/60.<<" min, " <<"error = "<< err <<std::endl;
+        save_data(output_fileprefix+"SteepD_"+num2str(n_iters), y, n);
     }while(err > eps&&n_iters<max_steps);
 
     free(x[0]);
@@ -286,7 +292,7 @@ Iterator<TA,TB>::Iterator(const Config & configSettings):
                 /* mu[i+md] = -mu[i]; */
                 /* field[i] = mu[i] - mu[i+md]; */
                 /* field[i+md] = mu[i] + mu[i+md]; */
-                mu[i*m[1]+j] = -2*cos(2*M_PI*i/m[0]) + 2*cos(2*M_PI*j/m[1]);
+                mu[i*m[1]+j] = -.2*cos(2*M_PI*i/m[0]) + 2*cos(2*M_PI*j/m[1]);
                 mu[i*m[1]+j+md] = -mu[i*m[1]+j];
                 field[i*m[1]+j] = mu[i*m[1]+j] - mu[i*m[1]+j+md];
                 field[i*m[1]+j+md] = mu[i*m[1]+j] + mu[i*m[1]+j+md];

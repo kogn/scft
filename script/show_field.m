@@ -1,6 +1,8 @@
 function show_field(data)
-st = reshape(data,64,128);
-surf(st(:,1:64)-st(:,65:end));
+x = 32;
+y = 128;
+st = reshape(data,y,x*2);
+surf(st(:,1:x)-st(:,x+1:end));
 hold;
-surf(st(:,1:64)+st(:,65:end));
+surf(st(:,1:x)+st(:,x+1:end));
 end

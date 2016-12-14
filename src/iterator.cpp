@@ -18,7 +18,7 @@ Picard::Picard()
     eps = 1e-4;
 }
 
-Anderson::Anderson()
+Anderson::Anderson(std::string s):output_fileprefix(s)
 {
     alpha = 0.1;
     eps = 1e-4;
@@ -57,6 +57,23 @@ void SteepD::read_data(std::string filename, double * data, int length){
     return;
 }
 void SteepD::save_data(std::string filename, double * data, int length){
+    std::ofstream file(filename.c_str());
+    for(int i = 0; i<length; i++){
+        file << data[i] << std::endl;
+    }
+    file.close();
+    return;
+}
+
+void Anderson::read_data(std::string filename, double * data, int length){
+    std::ifstream file(filename.c_str());
+    for(int i = 0; i<length; i++){
+        file >> data[i];
+    }
+    file.close();
+    return;
+}
+void Anderson::save_data(std::string filename, double * data, int length){
     std::ofstream file(filename.c_str());
     for(int i = 0; i<length; i++){
         file << data[i] << std::endl;
