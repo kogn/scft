@@ -35,14 +35,16 @@ int main(int argc, char * argv[])
     /*     case 1: */
     /*         typedef Particle TA; */
     /* } */
+    typedef Solver TA;
+    typedef Particle TB;
 
 
-    void (Iterator<KPSolver,Particle>::*fp)();
-    void (Iterator<KPSolver,Particle>::*fp2)();
-    fp = &Iterator<KPSolver,Particle>::update_field;
-    fp2 = &Iterator<KPSolver,Particle>::delta_mu;
-    Iterator<KPSolver,Particle> test(configSettings);
-    Iterator<KPSolver,Particle> * obp=&test;
+    void (Iterator<TA,TB>::*fp)();
+    void (Iterator<TA,TB>::*fp2)();
+    fp = &Iterator<TA,TB>::update_field;
+    fp2 = &Iterator<TA,TB>::delta_mu;
+    Iterator<TA,TB> test(configSettings);
+    Iterator<TA,TB> * obp=&test;
 
     test.read_mu(input_filedir+input_filename);
     //test.read_field(input_filedir+input_filename);
@@ -53,7 +55,7 @@ int main(int argc, char * argv[])
     //pc.solve(obp,fp,test.field,test.md*2);
 
 
-    /* sd.solve(obp,fp2,test.mu,test.dmu,test.md*2,max_steps); */
+    //sd.solve(obp,fp2,test.mu,test.dmu,test.md*2,max_steps);
     ad.solve(obp,fp,test.field,test.md*2,max_steps);
     test.A.save_data(output_filedir+param_filename);
 
