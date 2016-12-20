@@ -46,8 +46,8 @@ int main(int argc, char * argv[])
     Iterator<TA,TB> test(configSettings);
     Iterator<TA,TB> * obp=&test;
 
-    test.read_mu(input_filedir+input_filename);
-    //test.read_field(input_filedir+input_filename);
+    //test.read_mu(input_filedir+input_filename);
+    test.read_field(input_filedir+input_filename);
 
     Picard pc;
     SteepD sd(output_filedir+output_filename);

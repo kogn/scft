@@ -1,7 +1,7 @@
 function res = test(output)
 %load ./data/output
 [m n] = size(output);
-res = zeros(m,1);
+res = zeros(m,3);
 A = zeros(3,3);
 for i=1:m
     A(1,1) = output(i,2);
@@ -13,5 +13,5 @@ for i=1:m
     A(2,1) = output(i,5);
     A(3,1) = output(i,6);
     A(3,2) = output(i,7);
-    res(i) = max(eig(A));
+    res(i,:) = eig(A);
 end
