@@ -37,8 +37,11 @@ Data::Data(const Config & configSettings)
 {
     bw = configSettings.Read<int>("Band_width");
     m[0] = configSettings.Read<int>("Grid_Size_x");
-    if(DIM==2){
+    if(DIM>=2){
         m[1] = configSettings.Read<int>("Grid_Size_y");
+    }
+    if(DIM>=3){
+        m[2] = configSettings.Read<int>("Grid_Size_z");
     }
 
     n_coeff = totalCoeffs_so3(bw);
@@ -74,6 +77,17 @@ Space_trans::Space_trans(const Config & configSettings):Data(configSettings)
     dims[1].n = m[1];
     dims[1].is = n3;
     dims[1].os = n3;
+  }
+  if(DIM == 3){
+      dims[0].n = m[0];
+      dims[0].is = n3*m[1]*m[2];
+      dims[0].os = n3*m[1]*m[2];
+      dims[1].n = m[1];
+      dims[1].is = n3*m[2];
+      dims[1].os = n3*m[2];
+      dims[2].n = m[2];
+      dims[2].is = n3;
+      dims[2].os = n3;
   }
   howmany_dims[0].n = n3;
   howmany_dims[0].is = 1;

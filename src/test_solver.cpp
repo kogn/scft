@@ -41,6 +41,19 @@ int main(int argc, char * argv[])
           field[i*test.m[1]+j+md] = mu[i*test.m[1]+j] + mu[i*test.m[1]+j+md];
         }
     }
+    if(DIM == 3)
+    {
+        int * m = test.m;
+        for(int i = 0; i<m[0]; i++)
+            for(int j = 0; j<m[1]; j++)
+                for(int k = 0; k<m[2]; k++)
+                {
+                    mu[i*m[1]*m[2]+j*m[2]+k] = -.2*cos(2*M_PI*i/m[0]) + 2*cos(2*M_PI*j/m[1]) + .2*cos(2*M_PI*k/m[2]);
+                    mu[i*m[1]*m[2]+j*m[2]+k+md] = -mu[i*m[1]*m[2]+j*m[2]+k];
+                    field[i*m[1]*m[2]+j*m[2]+k] = mu[i*m[1]*m[2]+j*m[2]+k] - mu[i*m[1]*m[2]+j*m[2]+k+md];
+                    field[i*m[1]*m[2]+j*m[2]+k+md] = mu[i*m[1]*m[2]+j*m[2]+k] + mu[i*m[1]*m[2]+j*m[2]+k+md];
+                }
+    }
 
     test.density(field);
 

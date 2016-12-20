@@ -1,6 +1,6 @@
 DEBUG = 0
 MKL=1
-DIM=2
+DIM=3
 
 INTEL_DIR= /usr/local/intel/
 MATHEMATICA_DIR= /usr/local/Wolfram/Mathematica/10.3/

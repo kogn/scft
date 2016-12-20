@@ -13,11 +13,15 @@ Particle::Particle(const Config & configSettings){
     m[0] = configSettings.Read<int>("Grid_Size_x");
     domain[0] = configSettings.Read<int>("domain0");
     nB = configSettings.Read<double>("nB");
-    if(DIM == 2){
+    if(DIM >= 2){
         m[1] = configSettings.Read<int>("Grid_Size_y");
         domain[1] = configSettings.Read<int>("domain1");
-
     }
+    if(DIM >= 3){
+        m[2] = configSettings.Read<int>("Grid_Size_z");
+        domain[2] = configSettings.Read<int>("domain2");
+    }
+
 
     md = 1;
     volume = 1.;

@@ -33,8 +33,11 @@ S2Data::S2Data(const Config & configSettings)
 {
     bw = configSettings.Read<int>("Band_width");
     m[0] = configSettings.Read<int>("Grid_Size_x");
-    if(DIM==2){
+    if(DIM>=2){
         m[1] = configSettings.Read<int>("Grid_Size_y");
+    }
+    if(DIM>=3){
+        m[2] = configSettings.Read<int>("Grid_Size_z");
     }
     n_coeff = bw*bw;
     n = bw*2;
@@ -74,6 +77,18 @@ S2_Space_trans::S2_Space_trans(const Config & configSettings):S2Data(configSetti
         dims[1].n = m[1];
         dims[1].is = n2;
         dims[1].os = n2;
+    }
+
+    if(DIM == 3){
+        dims[0].n = m[0];
+        dims[0].is = n2*m[1]*m[2];
+        dims[0].os = n2*m[1]*m[2];
+        dims[1].n = m[1];
+        dims[1].is = n2*m[2];
+        dims[1].os = n2*m[2];
+        dims[2].n = m[2];
+        dims[2].is = n2;
+        dims[2].os = n2;
     }
 
     howmany_dims[0].n = n2;

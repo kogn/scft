@@ -59,8 +59,11 @@ KPSolver::KPSolver(const Config & configSettings):
     }
 
     domain[0] = configSettings.Read<double>("domain0");
-    if(DIM==2){
+    if(DIM>=2){
         domain[1] = configSettings.Read<double>("domain1");
+    }
+    if(DIM>=3){
+        domain[2] = configSettings.Read<double>("domain2");
     }
 }
 
@@ -207,6 +210,42 @@ void KPSolver::gradient(fftw_complex dt)
                     double imag = realdata1[index];
                     realdata0[index] = (co*real - si*imag)*ex;
                     realdata1[index] = (co*imag + si*real)*ex;
+                }
+            }
+        }
+    }
+    return;
+}
+#elif DIM == 3
+void KPSolver::gradient(fftw_complex dt)
+{
+#pragma omp parallel for num_threads(NUM_THREADS)
+    for(int i=0; i<m[0]; i++)
+    {
+        for(int i1 = 0; i1<m[1]; i1++){
+            for(int i2 = 0; i2<m[2]; i2++){
+                int index0 = (i+m[0]/2)%m[0]-m[0]/2;
+                int index1 = (i1+m[1]/2)%m[1]-m[1]/2;
+                int index2 = (i2+m[2]/2)%m[2]-m[2]/2;
+                for(int j = 0; j<n; j++)
+                {
+                    for(int k = 0; k<n; k++)
+                    {
+                        double tmp00 = -sin(M_PI*(2*j+1)/4./bw)*cos(2*M_PI*k/n)*2.*M_PI/domain[0]*dt[0];
+                        double tmp01 = -sin(M_PI*(2*j+1)/4./bw)*cos(2*M_PI*k/n)*2.*M_PI/domain[0]*dt[1];
+                        double tmp10 = -sin(M_PI*(2*j+1)/4./bw)*sin(2*M_PI*k/n)*2.*M_PI/domain[1]*dt[0];
+                        double tmp11 = -sin(M_PI*(2*j+1)/4./bw)*sin(2*M_PI*k/n)*2.*M_PI/domain[1]*dt[1];
+                        double tmp20 = -cos(M_PI*(2*j+1)/4./bw)*2.*M_PI/domain[2]*dt[0];
+                        double tmp21 = -cos(M_PI*(2*j+1)/4./bw)*2.*M_PI/domain[2]*dt[1];
+                        double co = cos(index0*tmp00+index1*tmp10+index2*tmp20);
+                        double si = sin(index0*tmp00+index1*tmp10+index2*tmp20);
+                        double ex = exp(-tmp01*index0-tmp11*index1-tmp21*index2);
+                        int index = (i*m[1]*m[2]+i1*m[2]+i2)*n2+n*j+k;
+                        double real = realdata0[index];
+                        double imag = realdata1[index];
+                        realdata0[index] = (co*real - si*imag)*ex;
+                        realdata1[index] = (co*imag + si*real)*ex;
+                    }
                 }
             }
         }
