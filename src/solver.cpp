@@ -11,7 +11,7 @@ extern "C" {
 #include <fftw3.h>
 #include <memory.h>
 #include "matrix.h"
-#include <cblas.h>
+#include <mkl_cblas.h>
 
 #include <soft/makeweights.h>
 #include <soft/makeWigner.h>
@@ -113,15 +113,44 @@ void Solver::onestep(const double * field)
   fftw_complex dt_gamma1_2 = {dt*gamma[1][0]/2,dt*gamma[1][1]/2};
   fftw_complex dt_gamma1 = {dt*gamma[1][0],dt*gamma[1][1]};
 
+  double t1, t2;
+  t1 = timer();
   constant(dt_gamma0_2, field);
+  t2 = timer();
+  std::cout<<"const: "<<(t2-t1)/60.<<std::endl;
+  t1 = t2;
   for_space();
+  t2 = timer();
+  std::cout<<"for_space: "<<(t2-t1)/60.<<std::endl;
+  t1 = t2;
   gradient(dt_gamma0_2);
+  t2 = timer();
+  std::cout<<"gradient: "<<(t2-t1)/60.<<std::endl;
+  t1 = t2;
   for_so3();
+  t2 = timer();
+  std::cout<<"for_so3: "<<(t2-t1)/60.<<std::endl;
+  t1 = t2;
   laplace(dt_gamma0);
+  t2 = timer();
+  std::cout<<"laplace: "<<(t2-t1)/60.<<std::endl;
+  t1 = t2;
   inv_so3();
+  t2 = timer();
+  std::cout<<"inv_so3: "<<(t2-t1)/60.<<std::endl;
+  t1 = t2;
   gradient(dt_gamma0_2);
+  t2 = timer();
+  std::cout<<"gradient: "<<(t2-t1)/60.<<std::endl;
+  t1 = t2;
   inv_space();
+  t2 = timer();
+  std::cout<<"inv_space: "<<(t2-t1)/60.<<std::endl;
+  t1 = t2;
   constant(dt_gamma0_2, field);
+  t2 = timer();
+  std::cout<<"const: "<<(t2-t1)/60.<<std::endl;
+  t1 = t2;
 
 
   constant(dt_gamma1_2, field);

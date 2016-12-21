@@ -203,6 +203,7 @@ void Anderson::solve(T * ob,void (T::*func) (),double* y ,int n, int max_steps=2
         g[i] = g[0] + n*i;
         x[i] = x[0] + n*i;
     }
+    timer();
 
     do{
         std::cout<<"The "<<n_iters<<"th step:" <<std::endl;

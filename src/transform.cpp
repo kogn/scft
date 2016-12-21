@@ -9,7 +9,7 @@ extern "C" {
 #include <malloc.h>
 #include <fftw3.h>
 #include <lapacke.h>
-#include <cblas.h>
+#include <mkl_cblas.h>
 
 #include <soft/makeweights.h>
 #include <soft/makeWigner.h>

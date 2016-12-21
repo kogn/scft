@@ -2,18 +2,18 @@ DEBUG = 0
 MKL=1
 DIM=3
 
-INTEL_DIR= /usr/local/intel/
-MATHEMATICA_DIR= /usr/local/Wolfram/Mathematica/10.3/
+INTEL_DIR= /home/xdkong/intel/
+MATHEMATICA_DIR= /home/xdkong/local/Wolfram/Mathematica/10.3/
 SRCDIR=./src/
 OBJDIR=./obj/
 CC = gcc 
 CXX = g++
-OPTS=-Ofast
+OPTS=-O3
 
 LDFLAGS=
 LIB= -L ../lib/
 COMMON=  -I ../include/
-CFLAGS=  -DNUM_THREADS=8 -DDIM=${DIM} -fopenmp
+CFLAGS=  -DNUM_THREADS=1 -DDIM=${DIM} -fopenmp
 
 
 ifeq ($(DEBUG), 1)
@@ -28,12 +28,15 @@ VPATH=./src/
 EXEC = test_solver test_trans main test_config test_s2trans test_kpsolver
 all: obj data $(EXEC)
 
-LDFLAGS += -llapacke -lsoft1 -ls2kit
+#LDFLAGS += -llapacke -lsoft1 -ls2kit
+LDFLAGS += -lsoft1 -ls2kit
 
 ifeq ($(MKL), 1)
 	CFLAGS+= -DMKL
 	COMMON += -I ${INTEL_DIR}/mkl/include/ -I ${INTEL_DIR}/mkl/include/fftw/
-	LIB += -L ${INTEL_DIR}/interfaces/fftw3xc -L ${INTEL_DIR}/mkl/lib/intel64/
+	LIB +=-L ${INTEL_DIR}/mkl/interfaces/fftw3xc \
+		  -L ${INTEL_DIR}/mkl/lib/intel64_lin \
+		  -L ${INTEL_DIR}/lib/intel64_lin/
 	LDFLAGS += -lfftw3xc_gnu -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread
 else
 	LDFLAGS += -lfftw3_omp -lfftw3 
@@ -42,7 +45,8 @@ COMMON += -I ${MATHEMATICA_DIR}/SystemFiles/Links/WSTP/DeveloperKit/Linux-x86-64
 LIB += -L ${MATHEMATICA_DIR}/SystemFiles/Links/WSTP/DeveloperKit/Linux-x86-64/CompilerAdditions/ \
 	   -L${MATHEMATICA_DIR}/SystemFiles/Libraries/Linux-x86-64
 
-LDFLAGS += -lopenblas  -lWSTP64i4 -lrt  -ldl -luuid  -lm
+#LDFLAGS += -lopenblas  -lWSTP64i4 -lrt  -ldl -luuid  -lm
+LDFLAGS += -lWSTP64i4 -lrt  -ldl -luuid  -lm
 
 OBJS = $(patsubst %.c,%.o,$(addprefix $(OBJDIR), $(notdir $(wildcard $(SRCDIR)*.c))))
 OBJS += $(patsubst %.cpp,%.o,$(addprefix $(OBJDIR), $(notdir $(wildcard $(SRCDIR)*.cpp))))
