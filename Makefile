@@ -17,7 +17,7 @@ OPTS=-O3
 LDFLAGS=
 LIB= -L ../lib/
 COMMON=  -I ../include/
-CFLAGS=  -DNUM_THREADS=32 -DDIM=${DIM} -fopenmp
+CFLAGS=  -DNUM_THREADS=8 -DDIM=${DIM} -fopenmp
 
 ifeq ($(STEP_TIME), 1)
   CFLAGS += -DSTEP_TIME
