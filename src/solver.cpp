@@ -11,8 +11,12 @@ extern "C" {
 #include <fftw3.h>
 #include <memory.h>
 #include "matrix.h"
-#include <mkl_cblas.h>
 
+#ifdef MKL
+#include <mkl_cblas.h>
+#else
+#include <cblas.h>
+#endif
 #include <soft/makeweights.h>
 #include <soft/makeWigner.h>
 #include <soft/utils_so3.h>
@@ -105,6 +109,8 @@ Solver::~Solver()
     free(f);
 }
 
+static double t_const, t_fspace, t_grad, t_fso3, t_laplace,
+              t_iso3, t_ispace;
 void Solver::onestep(const double * field)
 {
   fftw_complex dt_gamma0_2 = {dt*gamma[0][0]/2,dt*gamma[0][1]/2};
@@ -112,66 +118,201 @@ void Solver::onestep(const double * field)
 
   fftw_complex dt_gamma1_2 = {dt*gamma[1][0]/2,dt*gamma[1][1]/2};
   fftw_complex dt_gamma1 = {dt*gamma[1][0],dt*gamma[1][1]};
-
+#ifdef STEP_TIME
   double t1, t2;
   t1 = timer();
+#endif
   constant(dt_gamma0_2, field);
+#ifdef STEP_TIME
   t2 = timer();
-  std::cout<<"const: "<<(t2-t1)/60.<<std::endl;
+  //std::cout<<"const: "<<(t2-t1)/60.<<std::endl;
+  t_const += (t2-t1)/60.;
   t1 = t2;
+#endif
   for_space();
+#ifdef STEP_TIME
   t2 = timer();
-  std::cout<<"for_space: "<<(t2-t1)/60.<<std::endl;
+  //std::cout<<"for_space: "<<(t2-t1)/60.<<std::endl;
+  t_fspace+=(t2-t1)/60.;
   t1 = t2;
+#endif
   gradient(dt_gamma0_2);
+#ifdef STEP_TIME
   t2 = timer();
-  std::cout<<"gradient: "<<(t2-t1)/60.<<std::endl;
+  //std::cout<<"gradient: "<<(t2-t1)/60.<<std::endl;
+  t_grad+=(t2-t1)/60.;
   t1 = t2;
+#endif
   for_so3();
+#ifdef STEP_TIME
   t2 = timer();
-  std::cout<<"for_so3: "<<(t2-t1)/60.<<std::endl;
+  //std::cout<<"for_so3: "<<(t2-t1)/60.<<std::endl;
+  t_fso3+=(t2-t1)/60.;
   t1 = t2;
+#endif
   laplace(dt_gamma0);
+#ifdef STEP_TIME
   t2 = timer();
-  std::cout<<"laplace: "<<(t2-t1)/60.<<std::endl;
+  //std::cout<<"laplace: "<<(t2-t1)/60.<<std::endl;
+  t_laplace+= (t2-t1)/60.;
   t1 = t2;
+#endif
   inv_so3();
+#ifdef STEP_TIME
   t2 = timer();
-  std::cout<<"inv_so3: "<<(t2-t1)/60.<<std::endl;
+  //std::cout<<"inv_so3: "<<(t2-t1)/60.<<std::endl;
+  t_iso3+=(t2-t1)/60.;
   t1 = t2;
+#endif
   gradient(dt_gamma0_2);
+#ifdef STEP_TIME
   t2 = timer();
-  std::cout<<"gradient: "<<(t2-t1)/60.<<std::endl;
+  //std::cout<<"gradient: "<<(t2-t1)/60.<<std::endl;
+  t_grad += (t2-t1)/60.;
   t1 = t2;
+#endif
   inv_space();
+#ifdef STEP_TIME
   t2 = timer();
-  std::cout<<"inv_space: "<<(t2-t1)/60.<<std::endl;
+  //std::cout<<"inv_space: "<<(t2-t1)/60.<<std::endl;
+  t_ispace+=(t2-t1)/60.;
   t1 = t2;
+#endif
   constant(dt_gamma0_2, field);
+#ifdef STEP_TIME
   t2 = timer();
-  std::cout<<"const: "<<(t2-t1)/60.<<std::endl;
+  //std::cout<<"const: "<<(t2-t1)/60.<<std::endl;
+  t_const += (t2-t1)/60.;
   t1 = t2;
-
+#endif
 
   constant(dt_gamma1_2, field);
+#ifdef STEP_TIME
+  t2 = timer();
+  //std::cout<<"const: "<<(t2-t1)/60.<<std::endl;
+  t_const += (t2-t1)/60.;
+  t1 = t2;
+#endif
   for_space();
+#ifdef STEP_TIME
+  t2 = timer();
+  //std::cout<<"inv_space: "<<(t2-t1)/60.<<std::endl;
+  t_fspace+=(t2-t1)/60.;
+  t1 = t2;
+#endif
   gradient(dt_gamma1_2);
+#ifdef STEP_TIME
+  t2 = timer();
+  //std::cout<<"inv_space: "<<(t2-t1)/60.<<std::endl;
+  t_grad+=(t2-t1)/60.;
+  t1 = t2;
+#endif
   for_so3();
+#ifdef STEP_TIME
+  t2 = timer();
+  //std::cout<<"inv_space: "<<(t2-t1)/60.<<std::endl;
+  t_fso3+=(t2-t1)/60.;
+  t1 = t2;
+#endif
   laplace(dt_gamma1);
+#ifdef STEP_TIME
+  t2 = timer();
+  //std::cout<<"inv_space: "<<(t2-t1)/60.<<std::endl;
+  t_laplace+=(t2-t1)/60.;
+  t1 = t2;
+#endif
   inv_so3();
+#ifdef STEP_TIME
+  t2 = timer();
+  //std::cout<<"inv_space: "<<(t2-t1)/60.<<std::endl;
+  t_iso3+=(t2-t1)/60.;
+  t1 = t2;
+#endif
   gradient(dt_gamma1_2);
+#ifdef STEP_TIME
+  t2 = timer();
+  //std::cout<<"inv_space: "<<(t2-t1)/60.<<std::endl;
+  t_grad+=(t2-t1)/60.;
+  t1 = t2;
+#endif
   inv_space();
+#ifdef STEP_TIME
+  t2 = timer();
+  //std::cout<<"inv_space: "<<(t2-t1)/60.<<std::endl;
+  t_ispace+=(t2-t1)/60.;
+  t1 = t2;
+#endif
   constant(dt_gamma1_2, field);
+#ifdef STEP_TIME
+  t2 = timer();
+  //std::cout<<"inv_space: "<<(t2-t1)/60.<<std::endl;
+  t_const+=(t2-t1)/60.;
+  t1 = t2;
+#endif
 
   constant(dt_gamma0_2, field);
+#ifdef STEP_TIME
+  t2 = timer();
+  //std::cout<<"inv_space: "<<(t2-t1)/60.<<std::endl;
+  t_const+=(t2-t1)/60.;
+  t1 = t2;
+#endif
   for_space();
+#ifdef STEP_TIME
+  t2 = timer();
+  //std::cout<<"inv_space: "<<(t2-t1)/60.<<std::endl;
+  t_fspace+=(t2-t1)/60.;
+  t1 = t2;
+#endif
   gradient(dt_gamma0_2);
+#ifdef STEP_TIME
+  t2 = timer();
+  //std::cout<<"inv_space: "<<(t2-t1)/60.<<std::endl;
+  t_grad+=(t2-t1)/60.;
+  t1 = t2;
+#endif
   for_so3();
+#ifdef STEP_TIME
+  t2 = timer();
+  //std::cout<<"inv_space: "<<(t2-t1)/60.<<std::endl;
+  t_fso3+=(t2-t1)/60.;
+  t1 = t2;
+#endif
   laplace(dt_gamma0);
+#ifdef STEP_TIME
+  t2 = timer();
+  //std::cout<<"inv_space: "<<(t2-t1)/60.<<std::endl;
+  t_laplace+=(t2-t1)/60.;
+  t1 = t2;
+#endif
   inv_so3();
+#ifdef STEP_TIME
+  t2 = timer();
+  //std::cout<<"inv_space: "<<(t2-t1)/60.<<std::endl;
+  t_iso3+=(t2-t1)/60.;
+  t1 = t2;
+#endif
   gradient(dt_gamma0_2);
+#ifdef STEP_TIME
+  t2 = timer();
+  //std::cout<<"inv_space: "<<(t2-t1)/60.<<std::endl;
+  t_grad+=(t2-t1)/60.;
+  t1 = t2;
+#endif
   inv_space();
+#ifdef STEP_TIME
+  t2 = timer();
+  //std::cout<<"inv_space: "<<(t2-t1)/60.<<std::endl;
+  t_ispace+=(t2-t1)/60.;
+  t1 = t2;
+#endif
   constant(dt_gamma0_2, field);
+#ifdef STEP_TIME
+  t2 = timer();
+  //std::cout<<"inv_space: "<<(t2-t1)/60.<<std::endl;
+  t_const+=(t2-t1)/60.;
+  t1 = t2;
+#endif
   /* for(int i = 0; i<md*n3; i++){ */
   /*     //realdata[i][0] = sqrt(realdata[i][0]*realdata[i][0]+realdata[i][1]*realdata[i][1]); */
   /*     //realdata[i][0] = fabs(realdata[i][0]); */
@@ -183,7 +324,7 @@ void Solver::onestep(const double * field)
 
 void Solver::constant(fftw_complex dt,const double * field)
 {
-#pragma omp parallel for num_threads(NUM_THREADS)
+#pragma omp parallel for num_threads(NUM_THREADS/2)
   for(int i = 0; i<md; i++)
   {
     double expw = exp(-field[i]*dt[0]);
@@ -263,43 +404,83 @@ void Solver::gradient(fftw_complex dt)
     return;
 }
 #elif DIM == 3
+/* void Solver::gradient(fftw_complex dt) */
+/* { */
+/* #pragma omp parallel for num_threads(NUM_THREADS) */
+/*     for(int i=0; i<m[0]; i++) */
+/*     { */
+/*         for(int i1 = 0; i1<m[1]; i1++){ */
+/*             for(int i2 = 0; i2<m[2]; i2++){ */
+/*                 int index0 = (i+m[0]/2)%m[0]-m[0]/2; */
+/*                 int index1 = (i1+m[1]/2)%m[1]-m[1]/2; */
+/*                 int index2 = (i2+m[2]/2)%m[2]-m[2]/2; */
+/*                 for(int j = 0; j<n; j++) */
+/*                 { */
+/*                     for(int k = 0; k<n; k++) */
+/*                     { */
+/*                         double tmp00 = -sin(M_PI*(2*j+1)/4./bw)*cos(2*M_PI*k/n)*2.*M_PI/domain[0]*dt[0]; */
+/*                         double tmp01 = -sin(M_PI*(2*j+1)/4./bw)*cos(2*M_PI*k/n)*2.*M_PI/domain[0]*dt[1]; */
+/*                         double tmp10 = -sin(M_PI*(2*j+1)/4./bw)*sin(2*M_PI*k/n)*2.*M_PI/domain[1]*dt[0]; */
+/*                         double tmp11 = -sin(M_PI*(2*j+1)/4./bw)*sin(2*M_PI*k/n)*2.*M_PI/domain[1]*dt[1]; */
+/*                         double tmp20 = -cos(M_PI*(2*j+1)/4./bw)*2.*M_PI/domain[2]*dt[0]; */
+/*                         double tmp21 = -cos(M_PI*(2*j+1)/4./bw)*2.*M_PI/domain[2]*dt[1]; */
+/*                         double co = cos(index0*tmp00+index1*tmp10+index2*tmp20); */
+/*                         double si = sin(index0*tmp00+index1*tmp10+index2*tmp20); */
+/*                         double ex = exp(-tmp01*index0-tmp11*index1-tmp21*index2); */
+/*                         for(int l = 0; l<n; l++) */
+/*                         { */
+/*                             int index = (i*m[1]*m[2]+i1*m[2]+i2)*n3+n*n*j+n*k+l; */
+/*                             double real = realdata[index][0]; */
+/*                             double imag = realdata[index][1]; */
+/*                             realdata[index][0] = (co*real - si*imag)*ex; */
+/*                             realdata[index][1] = (co*imag + si*real)*ex; */
+/*                         } */
+/*                     } */
+/*                 } */
+/*             } */
+/*         } */
+/*     } */
+/*     return; */
+/* } */
 void Solver::gradient(fftw_complex dt)
 {
 #pragma omp parallel for num_threads(NUM_THREADS)
-    for(int i=0; i<m[0]; i++)
+  for(int ids=0; ids<md; ids++){
+    int i = ids/m[1]/m[2];
+    int i1 = (ids/m[2])%m[1];
+    int i2 = ids%m[2];
+    int index0 = (i+m[0]/2)%m[0]-m[0]/2;
+    int index1 = (i1+m[1]/2)%m[1]-m[1]/2;
+    int index2 = (i2+m[2]/2)%m[2]-m[2]/2;
+    for(int j = 0; j<n; j++)
     {
-        for(int i1 = 0; i1<m[1]; i1++){
-            for(int i2 = 0; i2<m[2]; i2++){
-                int index0 = (i+m[0]/2)%m[0]-m[0]/2;
-                int index1 = (i1+m[1]/2)%m[1]-m[1]/2;
-                int index2 = (i2+m[2]/2)%m[2]-m[2]/2;
-                for(int j = 0; j<n; j++)
-                {
-                    for(int k = 0; k<n; k++)
-                    {
-                        double tmp00 = -sin(M_PI*(2*j+1)/4./bw)*cos(2*M_PI*k/n)*2.*M_PI/domain[0]*dt[0];
-                        double tmp01 = -sin(M_PI*(2*j+1)/4./bw)*cos(2*M_PI*k/n)*2.*M_PI/domain[0]*dt[1];
-                        double tmp10 = -sin(M_PI*(2*j+1)/4./bw)*sin(2*M_PI*k/n)*2.*M_PI/domain[1]*dt[0];
-                        double tmp11 = -sin(M_PI*(2*j+1)/4./bw)*sin(2*M_PI*k/n)*2.*M_PI/domain[1]*dt[1];
-                        double tmp20 = -cos(M_PI*(2*j+1)/4./bw)*2.*M_PI/domain[2]*dt[0];
-                        double tmp21 = -cos(M_PI*(2*j+1)/4./bw)*2.*M_PI/domain[2]*dt[1];
-                        double co = cos(index0*tmp00+index1*tmp10+index2*tmp20);
-                        double si = sin(index0*tmp00+index1*tmp10+index2*tmp20);
-                        double ex = exp(-tmp01*index0-tmp11*index1-tmp21*index2);
-                        for(int l = 0; l<n; l++)
-                        {
-                            int index = (i*m[1]*m[2]+i1*m[2]+i2)*n3+n*n*j+n*k+l;
-                            double real = realdata[index][0];
-                            double imag = realdata[index][1];
-                            realdata[index][0] = (co*real - si*imag)*ex;
-                            realdata[index][1] = (co*imag + si*real)*ex;
-                        }
-                    }
-                }
-            }
+      double co1 = cos(M_PI*(2*j+1)/4./bw);
+      double si1 = sin(M_PI*(2*j+1)/4./bw);
+      double tmp20 = -co1*2.*M_PI/domain[2]*dt[0];
+      double tmp21 = -co1*2.*M_PI/domain[2]*dt[1];
+      for(int k = 0; k<n; k++)
+      {
+        double co2 = cos(2*M_PI*k/n);
+        double si2 = sin(2*M_PI*k/n);
+        double tmp00 = -si1*co2*2.*M_PI/domain[0]*dt[0];
+        double tmp01 = -si1*co2*2.*M_PI/domain[0]*dt[1];
+        double tmp10 = -si1*si2*2.*M_PI/domain[1]*dt[0];
+        double tmp11 = -si1*si2*2.*M_PI/domain[1]*dt[1];
+        double sum_tmp =index0*tmp00+index1*tmp10+index2*tmp20; 
+        double co = cos(sum_tmp);
+        double si = sin(sum_tmp);
+        double ex = exp(-tmp01*index0-tmp11*index1-tmp21*index2);
+        for(int index = ids*n3+n*n*j+n*k; index<ids*n3+n*n*j+n*k+n; index++)
+        {
+          double real = realdata[index][0];
+          double imag = realdata[index][1];
+          realdata[index][0] = (co*real - si*imag)*ex;
+          realdata[index][1] = (co*imag + si*real)*ex;
         }
+      }
     }
-    return;
+  }
+  return;
 }
 #endif
 
@@ -310,7 +491,7 @@ void Solver::laplace(fftw_complex dt)
         ptr = matrix;
     else 
         ptr = matrix1;
-#pragma omp parallel for num_threads(NUM_THREADS)
+#pragma omp parallel for num_threads(NUM_THREADS/2)
     for(int i = 0; i<md; i++)
     {
         for(int l = 0; l<bw; l++)
@@ -321,6 +502,7 @@ void Solver::laplace(fftw_complex dt)
                 {
                     double real = 0.;
                     double imag = 0.;
+                    int index3 = n_coeff*i+so3CoefLoc(j,k,l,bw);
                     for(int kk = -l;kk<=l;kk++)
                     {
                         int index = so3CoefLoc(j,kk,l,bw) + i*n_coeff;
@@ -330,8 +512,8 @@ void Solver::laplace(fftw_complex dt)
                         imag+=ptr[index2][0]*spectdata[index][1]
                             +ptr[index2][1]*spectdata[index][0];
                     }
-                    spectdata[n_coeff*i+so3CoefLoc(j,k,l,bw)][0] = real;
-                    spectdata[n_coeff*i+so3CoefLoc(j,k,l,bw)][1] = imag;
+                    spectdata[index3][0] = real;
+                    spectdata[index3][1] = imag;
                 }
         }
     }
@@ -348,7 +530,9 @@ void Solver::solve_eqn(const double * field)
 
   for(int i = 1; i<n_step+1; i++)
   {
+    //std::cout<<"before onestep: "<<timer()/60<<std::endl;
     onestep(field);
+    //std::cout<<"after onestep: "<<timer()/60<<std::endl;
     cblas_dcopy(md*n3,realdata[0],2,hist_forward+i*md*n3,1);
 /* #pragma omp parallel for num_threads(NUM_THREADS) */
 /*     for(int j = 0; j<md*n3; j++) */
@@ -356,6 +540,8 @@ void Solver::solve_eqn(const double * field)
 /*       hist_forward[j+i*md*n3] = realdata[j][0]; */
 /*     } */
   }
+  std::cout<<"const: "<<t_const<<",fspace: "<<t_fspace<<",grad: "<<t_grad 
+    <<",fso3: "<<t_fso3<<",laplace: "<<t_laplace<<",iso3: "<<t_iso3<<",ispace: "<<t_ispace<<std::endl;
   return;
 }
 
@@ -389,9 +575,18 @@ void Solver::pdf()
 
 void Solver::density(const double * field)
 {
+#ifdef OTH_TIME
+    std::cout<<"call density: "<<timer()/60<<std::endl;
+#endif
     solve_eqn(field);
+#ifdef OTH_TIME
+    std::cout<<"solve eqn: "<<timer()/60<<std::endl;
+#endif
     Q = ptnfn();
     pdf();
+#ifdef OTH_TIME
+    std::cout<<"ptnfn and pdf: "<<timer()/60<<std::endl;
+#endif
 #pragma omp parallel for num_threads(NUM_THREADS)
     for(int i = 0; i<md; i++)
     {
