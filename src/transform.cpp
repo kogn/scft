@@ -9,7 +9,11 @@ extern "C" {
 #include <malloc.h>
 #include <fftw3.h>
 #include <lapacke.h>
+#ifdef MKL
+#include <mkl_cblas.h>
+#else
 #include <cblas.h>
+#endif
 
 #include <soft/makeweights.h>
 #include <soft/makeWigner.h>
@@ -134,11 +138,11 @@ void Space_trans::inv_space()
 
 SO3_trans::SO3_trans(const Config & configSettings):Data(configSettings)
 {
-  workspace_cx =(fftw_complex**)malloc(sizeof(fftw_complex*)*NUM_THREADS);
-  workspace_cx2=(fftw_complex**)malloc(sizeof(fftw_complex*)*NUM_THREADS);
-  workspace_re = (double **)malloc(sizeof(double*)*NUM_THREADS);
+  workspace_cx =(fftw_complex**)malloc(sizeof(fftw_complex*)*NUM_THREADS/2);
+  workspace_cx2=(fftw_complex**)malloc(sizeof(fftw_complex*)*NUM_THREADS/2);
+  workspace_re = (double **)malloc(sizeof(double*)*NUM_THREADS/2);
 
-  for(int i = 0; i<NUM_THREADS; i++)
+  for(int i = 0; i<NUM_THREADS/2; i++)
   {
     workspace_cx[i] = (fftw_complex*)fftw_malloc(sizeof(fftw_complex) * n3);
     workspace_cx2[i] = (fftw_complex*)fftw_malloc(sizeof(fftw_complex) * n3);
@@ -176,21 +180,21 @@ SO3_trans::SO3_trans(const Config & configSettings):Data(configSettings)
         istride, idist,
         workspace_cx[0], onembed,
         ostride, odist,
-        FFTW_BACKWARD, FFTW_MEASURE );
-        //FFTW_BACKWARD, FFTW_PATIENT);
+        //FFTW_BACKWARD, FFTW_MEASURE );
+        FFTW_BACKWARD, FFTW_PATIENT);
 
     p2 = fftw_plan_many_dft( rank, na, howmany,
         workspace_cx[0], inembed,
         istride, idist,
         workspace_cx2[0], onembed,
         ostride, odist,
-        FFTW_FORWARD, FFTW_MEASURE );
-        //FFTW_FORWARD, FFTW_PATIENT);
+        //FFTW_FORWARD, FFTW_MEASURE );
+        FFTW_FORWARD, FFTW_PATIENT);
   }
 }
 void SO3_trans::inv_so3()
 {
-#pragma omp parallel for num_threads(NUM_THREADS)
+#pragma omp parallel for num_threads(NUM_THREADS/2)
   for(int i = 0; i<md; i++)
   {
     int thread_num = omp_get_thread_num();
@@ -208,7 +212,7 @@ void SO3_trans::inv_so3()
 }
 void SO3_trans::for_so3()
 {
-#pragma omp parallel for num_threads(NUM_THREADS)
+#pragma omp parallel for num_threads(NUM_THREADS/2)
   for(int i = 0; i<md; i++)
   {
     int thread_num = omp_get_thread_num();
@@ -236,7 +240,7 @@ SO3_trans::~SO3_trans()
   free(wignersTrans) ;
   free(wigners) ;
 
-  for(int i=0; i<NUM_THREADS; i++)
+  for(int i=0; i<NUM_THREADS/2; i++)
   {
     fftw_free(workspace_cx[i]);
     fftw_free(workspace_cx2[i]);

@@ -9,7 +9,11 @@ extern "C" {
 #include <fftw3.h>
 #include <lapacke.h>
 #include "matrix.h"
+#ifdef MKL
+#include <mkl_cblas.h>
+#else
 #include <cblas.h>
+#endif
 
 #include <s2kit/makeweights.h>
 #include <s2kit/cospmls.h>
