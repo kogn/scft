@@ -55,11 +55,9 @@ int main(int argc, char * argv[])
     //pc.solve(obp,fp,test.field,test.md*2);
 
 
-    //sd.solve(obp,fp2,test.mu,test.dmu,test.md*2,max_steps);
+    sd.solve(obp,fp2,test.mu,test.dmu,test.md*2,100);
     ad.solve(obp,fp,test.field,test.md*2,max_steps);
     test.A.save_data(output_filedir+param_filename);
-
-
 
   return 0;
 }
