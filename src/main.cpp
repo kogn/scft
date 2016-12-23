@@ -27,14 +27,7 @@ int main(int argc, char * argv[])
     std::string output_filename = configSettings.Read<std::string>("Output_filename");
     std::string param_filename= configSettings.Read<std::string>("Param_filename");
     int max_steps = configSettings.Read<int>("Max_steps");
-    /* int A_type = configSettings.Read<int>("A_type"); */
-    /* int B_type = configSettings.Read<int>("B_type"); */
-    /* switch(A_type){ */
-    /*     case 0: */
-    /*         typedef Solver TA; */
-    /*     case 1: */
-    /*         typedef Particle TA; */
-    /* } */
+
     typedef Solver TA;
     typedef Particle TB;
 
@@ -58,8 +51,6 @@ int main(int argc, char * argv[])
     //sd.solve(obp,fp2,test.mu,test.dmu,test.md*2,max_steps);
     ad.solve(obp,fp,test.field,test.md*2,max_steps);
     test.A.save_data(output_filedir+param_filename);
-
-
 
   return 0;
 }

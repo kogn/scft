@@ -2,7 +2,7 @@ DEBUG = 0
 MKL=0
 DIM=3
 OTH_TIME=0
-STEP_TIME=1
+STEP_TIME=0
 
 INTEL_DIR= /home/xdkong/intel/
 MATHEMATICA_DIR= /home/xdkong/local/Wolfram/Mathematica/10.3/

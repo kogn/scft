@@ -11,3 +11,4 @@ scft.kdev4
 *.vts
 test_kpsolver
 test_s2trans
+callgrind.out.*

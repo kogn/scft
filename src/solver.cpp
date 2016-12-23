@@ -540,8 +540,10 @@ void Solver::solve_eqn(const double * field)
 /*       hist_forward[j+i*md*n3] = realdata[j][0]; */
 /*     } */
   }
+#ifdef STEP_TIME
   std::cout<<"const: "<<t_const<<",fspace: "<<t_fspace<<",grad: "<<t_grad 
     <<",fso3: "<<t_fso3<<",laplace: "<<t_laplace<<",iso3: "<<t_iso3<<",ispace: "<<t_ispace<<std::endl;
+#endif
   return;
 }
 
