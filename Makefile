@@ -35,7 +35,7 @@ CFLAGS+=$(OPTS)
 .PHONY: clean all
 
 VPATH=./src/
-EXEC = test_solver test_trans main test_config test_s2trans test_kpsolver
+EXEC = test_solver test_trans main test_config test_s2trans test_kpsolver test_diblock_solver
 all: obj data $(EXEC)
 
 #LDFLAGS += -llapacke -lsoft1 -ls2kit
@@ -63,6 +63,9 @@ LDFLAGS += -lWSTP64i4 -lrt  -ldl -luuid  -lm
 OBJS = $(patsubst %.c,%.o,$(addprefix $(OBJDIR), $(notdir $(wildcard $(SRCDIR)*.c))))
 OBJS += $(patsubst %.cpp,%.o,$(addprefix $(OBJDIR), $(notdir $(wildcard $(SRCDIR)*.cpp))))
 DEPS = $(wildcard $(SRCDIR)*.h $(SRCDIR)*.hpp) Makefile
+
+test_diblock_solver: $(filter-out $(addprefix $(OBJDIR),$(filter-out test_diblock_solver.o,$(addsuffix .o,$(EXEC)))),$(OBJS))
+	$(CXX) $(COMMON) $(CFLAGS) $^ $(LIB) $(LDFLAGS) -o $@ 
 
 test_kpsolver: $(filter-out $(addprefix $(OBJDIR),$(filter-out test_kpsolver.o,$(addsuffix .o,$(EXEC)))),$(OBJS))
 	$(CXX) $(COMMON) $(CFLAGS) $^ $(LIB) $(LDFLAGS) -o $@ 

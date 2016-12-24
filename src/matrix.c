@@ -63,6 +63,8 @@ void skip_packets(WSLINK lp) {
 void getmatrix(int bw, double alpha, double beta, double kappa, double tau,
     fftw_complex * gamma, double dt, fftw_complex *matrix, fftw_complex *matrix1)
 {
+    ep = (WSENV)0;
+    lp = (WSLINK)0;
   int l;
   init_and_openlink();
 

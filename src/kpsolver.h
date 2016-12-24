@@ -11,6 +11,10 @@ extern "C" {
 
 #include "kptransform.h"
 
+/* template<typename TA, typename TB> */
+/* void connect_bond_forward(TA&,TB&); */
+/* template<typename TA, typename TB> */
+/* void connect_bond_backward(TA&,TB&); */
 
 class KPSolver : public S2_Space_trans, public S2_trans
 {
@@ -29,16 +33,21 @@ class KPSolver : public S2_Space_trans, public S2_trans
         void pdf();
         void solve_eqn_forward(const double *);
         void solve_eqn_backward(const double *);
+        /* template<typename TA, typename TB> */
+        /*     friend void connect_bond_forward<>(TA&,TB&); */
+        /* template<typename TA, typename TB> */
+        /*     friend void connect_bond_backward<>(TA&,TB&); */
         bool head_tail;
 
         double * phi;
         double * S[6];
         double * dist;
-    private:
-        static int count;
         static double * hist_forward;
         static double * hist_backward;
+    private:
+        static int count;
 
+        double alpha, beta;
         fftw_complex gamma[2];
 
         double volume;
@@ -50,7 +59,6 @@ class KPSolver : public S2_Space_trans, public S2_trans
         void tensor();
 
         double t, dt;
-        double alpha, beta;
 
         void onestep(const double *);
         void laplace(fftw_complex );

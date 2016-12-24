@@ -5,6 +5,7 @@
 extern "C" {
 #endif //__cplusplus
 #include <fftw3.h>
+#include <cblas.h>
 
 #ifdef __cplusplus
 }
@@ -55,6 +56,7 @@ Homogeneous<TA>::Homogeneous(const Config &configSettings):A(configSettings)
 
 template<typename TA>
 Homogeneous<TA>::~Homogeneous(){
+    free(phi);
 }
 
     template<typename TA>

@@ -1,5 +1,6 @@
 #ifndef __DIBLOCK_HPP__
 #define __DIBLOCK_HPP__
+#include <cmath>
 
 #ifdef __cplusplus
 extern "C" {
@@ -29,7 +30,7 @@ class Diblock
         TA A;
         TB B;
         Diblock(const Config &);
-        ~Diblock();
+        //~Diblock();
         void save_data(std::string);
         double ptnfn(int s = 0);
         int n_step;
@@ -46,41 +47,41 @@ class Diblock
         void pdf();
 };
 
-static void connect_bond_forward(KPSolver & A, Solver & B){
+void connect_bond_forward(KPSolver & A, Solver & B){
     double * ptrA = A.hist_forward+A.md*A.n2*A.n_step;
     double * ptrB = B.hist_forward;
 #pragma omp parallel for num_threads(NUM_THREADS)
-    for(int i = 0; i<md*A.n2; i++)
+    for(int i = 0; i<A.md*A.n2; i++)
     {
-        for(int l = 0; l<n; l++){
-            ptrA[i*n+l] = ptrA[i]/2./M_PI;
+        for(int l = 0; l<A.n; l++){
+            ptrA[i*A.n+l] = ptrA[i]/2./M_PI;
         }
     }
     return;
 }
 
-static void connect_bond_backward(Solver & A, KPSolver & B){
+void connect_bond_backward(Solver & A, KPSolver & B){
     double * ptrB = B.hist_backward+B.md*B.n2*B.n_step;
     double * ptrA = A.hist_backward;
 #pragma omp parallel for num_threads(NUM_THREADS)
-    for(int i = 0; i<md*B.n2; i++)
+    for(int i = 0; i<B.md*B.n2; i++)
     {
-        for(int l = 0; l<n; l++){
-            ptrA[i*n+l] = ptrA[i]/2./M_PI;
+        for(int l = 0; l<B.n; l++){
+            ptrA[i*A.n+l] = ptrA[i]/2./M_PI;
         }
     }
     return;
 }
 
-static void connect_bond_forward(Solver & A, KPSolver & B){
+void connect_bond_forward(Solver & A, KPSolver & B){
     double * ptrA = A.hist_forward+A.md*A.n3*A.n_step;
     double * ptrB = B.hist_forward;
 #pragma omp parallel for num_threads(NUM_THREADS)
-    for(int i = 0; i<md*B.n2; i++)
+    for(int i = 0; i<A.md*B.n2; i++)
     {
         ptrB[i] = 0.;
-        for(int l = 0; l<n; l++){
-            ptrB[i] += ptrA[i*n+l];
+        for(int l = 0; l<A.n; l++){
+            ptrB[i] += ptrA[i*A.n+l];
         }
         ptrB[i] *= 2.*M_PI/A.n;
     }
@@ -88,15 +89,15 @@ static void connect_bond_forward(Solver & A, KPSolver & B){
 }
 
 
-static void connect_bond_backward(KPSolver& A, Solver & B){
+void connect_bond_backward(KPSolver& A, Solver & B){
     double * ptrB = B.hist_forward+B.md*B.n3*B.n_step;
     double * ptrA = A.hist_forward;
 #pragma omp parallel for num_threads(NUM_THREADS)
-    for(int i = 0; i<md*B.n2; i++)
+    for(int i = 0; i<A.md*A.n2; i++)
     {
         ptrA[i] = 0.;
-        for(int l = 0; l<n; l++){
-            ptrA[i] += ptrB[i*n+l];
+        for(int l = 0; l<A.n; l++){
+            ptrA[i] += ptrB[i*A.n+l];
         }
         ptrA[i] *= 2.*M_PI/B.n;
     }
@@ -104,7 +105,7 @@ static void connect_bond_backward(KPSolver& A, Solver & B){
 }
 
     template<typename TA, typename TB>
-Diblock<TA,TB>::Diblock(const Config &configSettings):A(configSettings)
+Diblock<TA,TB>::Diblock(const Config &configSettings):A(configSettings),B(configSettings)
 {
     n_step = configSettings.Read<int>("Steps_on_chain");
     m = A.m;
