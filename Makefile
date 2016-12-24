@@ -4,10 +4,10 @@ DIM=3
 OTH_TIME=0
 STEP_TIME=0
 
-INTEL_DIR= /home/xdkong/intel/
-MATHEMATICA_DIR= /home/xdkong/local/Wolfram/Mathematica/10.3/
-OPENBLAS_DIR = /home/xdkong/local/openblas/
-FFTW_DIR = /home/xdkong/local/fftw3/
+INTEL_DIR= /opt/intel/
+MATHEMATICA_DIR= /usr/local/Wolfram/Mathematica/10.3/
+OPENBLAS_DIR = /home/kong/local/openblas/
+FFTW_DIR = /home/kong/local/fftw3/
 SRCDIR=./src/
 OBJDIR=./obj/
 CC = gcc 

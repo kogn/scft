@@ -5,6 +5,7 @@
 extern "C" {
 #endif //__cplusplus
 #include <fftw3.h>
+#include <cblas.h>
 
 #ifdef __cplusplus
 }
@@ -47,14 +48,16 @@ class Homogeneous
 Homogeneous<TA>::Homogeneous(const Config &configSettings):A(configSettings)
 {
     n_step = configSettings.Read<int>("Steps_on_chain");
+    prop = configSettings.Read<double>("nA");
     m = A.m;
     md = A.md;
-    phi = (double *)malloc(sizeof(double)*md);
-    cblas_dcopy(md,A.phi,1,phi,prop);
+    //phi = (double *)malloc(sizeof(double)*md);
+    phi = new double[md];
 }
 
 template<typename TA>
 Homogeneous<TA>::~Homogeneous(){
+  delete [] phi;
 }
 
     template<typename TA>
@@ -78,6 +81,7 @@ void Homogeneous<TA>::density(const double * field)
     ptnfn();
     pdf();
     A.density();
+    cblas_daxpy(md,prop,A.phi,1,phi,1);
     return;
 }
 

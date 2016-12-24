@@ -44,7 +44,6 @@ class Iterator
     private:
         void print_info();
 
-        void quality();
 
         double energy();
         double H;
@@ -208,14 +207,17 @@ double Iterator<TA,TB>::energy()
     template<class TA, class TB>
 void Iterator<TA,TB>::print_info()
 {
-    double quality= 0.;
-#pragma omp parallel for num_threads(NUM_THREADS) reduction(+:quality)
+    double quality_A= 0.;
+    double quality_B= 0.;
+//#pragma omp parallel for num_threads(NUM_THREADS) reduction(+:quality)
     for(int i = 0; i<md; i++)
     {
-        quality += A.phi[i] + B.phi[i];
+      quality_A += A.phi[i];
+      quality_B += B.phi[i];
     }
-    quality /= md;
-    std::cout<<"Quality = "<<quality<<"; Q_A = "<<A.Q<<
+    quality_A /= md;
+    quality_B /= md;
+    std::cout<<"Quality = ("<<quality_A<<", "<<quality_B<<"); Q_A = "<<A.Q<<
         "; Q_B = "<<B.Q<<"; H = "
         <<H<<std::endl;
     return;
