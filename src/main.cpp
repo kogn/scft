@@ -2,11 +2,13 @@
 #include <cstdlib>
 #include <cstdio>
 #include <string>
-#include "iterator.hpp"
 #include "Config.h"
-#include "solver.h"
 #include "particle.h"
+#include "homogeneous.hpp"
+#include "solver.h"
 #include "kpsolver.h"
+#include "blends.hpp"
+#include "iterator.h"
 
 #ifndef DIM
 #define DIM 1
@@ -28,7 +30,7 @@ int main(int argc, char * argv[])
     std::string param_filename= configSettings.Read<std::string>("Param_filename");
     int max_steps = configSettings.Read<int>("Max_steps");
 
-    typedef Solver TA;
+    typedef Homogeneous<Solver> TA;
     typedef Particle TB;
 
 

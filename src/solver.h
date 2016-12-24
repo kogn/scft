@@ -24,18 +24,25 @@ class Solver : public Space_trans, public SO3_trans
 {
     public:
         Solver(const Config &);
-        Solver();
         ~Solver();
         void save_data(std::string);
         double ptnfn(int s = 0);
         int n_step;
+        double f;
 
         double Q;
-        double nA;
-        void density(const double * field);
+        void init_data_forward();
+        void init_data_backward();
+        void density();
+        void pdf();
+        void solve_eqn_forward(const double *);
+        void solve_eqn_backward(const double *);
+        bool head_tail;
+
         double * phi;
+        double * S[6];
+        double * dist;
     private:
-        void solve_eqn(const double *);
         static int count;
         static double * hist_forward;
         static double * hist_backward;
@@ -49,13 +56,9 @@ class Solver : public Space_trans, public SO3_trans
         static fftw_complex * matrix;
         static fftw_complex * matrix1;
 
-        void init_data();
-        void pdf();
         void tensor();
 
         double t, dt;
-        double * S[6];
-        double * f;
 
         void onestep(const double *);
         void laplace(fftw_complex);

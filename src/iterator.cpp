@@ -2,10 +2,7 @@
 #include <iostream>
 #include <fstream>
 
-#include "iterator.hpp"
-#ifndef NUM_THREADS
-#define NUM_THREADS 8
-#endif //NUM_THREADS
+#include "iterator.h"
 
 #ifndef DIM 
 #define DIM 1

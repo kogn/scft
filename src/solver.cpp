@@ -38,16 +38,17 @@ int Solver::count = 0;
 fftw_complex * Solver::matrix = NULL;
 fftw_complex * Solver::matrix1 = NULL;
 double * Solver::hist_forward = NULL;
-//double * Solver::hist_backward = NULL;
+double * Solver::hist_backward = NULL;
 Solver::Solver(const Config & configSettings):
     Space_trans(configSettings),SO3_trans(configSettings),Data(configSettings)
 {
-    nA = configSettings.Read<double>("nA");
-    n_step = configSettings.Read<int>("Steps_on_chain");
+    f = configSettings.Read<double>("f_helical");
+    n_step = configSettings.Read<int>("Steps_on_chain_helical");
     alpha = configSettings.Read<double>("alpha");
     beta = configSettings.Read<double>("beta");
     kappa = configSettings.Read<double>("kappa");
     tau = configSettings.Read<double>("tau");
+    head_tail = configSettings.Read<int>("head_tail");
 
     phi = (double *) malloc(sizeof(double)*md);
     S[0] = (double *) malloc(sizeof(double)*md*6);
@@ -55,8 +56,8 @@ Solver::Solver(const Config & configSettings):
     {
         S[i] = S[0] + md*i;
     }
-    f = (double *)malloc(sizeof(double)*md*n3);
-    dt = 1./n_step;
+    dist = (double *)malloc(sizeof(double)*md*n3);
+    dt = f/n_step;
     gamma[0][0] = 0.324396404020171225;
     gamma[0][1] = 0.134586272490806680;
     gamma[1][0] = 0.351207191959657661;
@@ -71,7 +72,9 @@ Solver::Solver(const Config & configSettings):
         getmatrix(bw,alpha,beta,kappa,tau,gamma, dt,matrix,matrix1);
         count ++;
         hist_forward = (double *) malloc(sizeof(double)*md*n3*(n_step+1));
-        //hist_backward= (double *) malloc(sizeof(double)*md*n3*(n_step+1));
+        if(!head_tail){
+            hist_backward= (double *) malloc(sizeof(double)*md*n3*(n_step+1));
+        }
     }
 
     domain[0] = configSettings.Read<double>("domain0");
@@ -84,29 +87,44 @@ Solver::Solver(const Config & configSettings):
 }
 
 
-void Solver::init_data()
+void Solver::init_data_forward()
 {
-  t = 0.;
+    t = 0.;
 #pragma omp parallel for num_threads(NUM_THREADS)
-  for(int i = 0; i<n3*md; i++)
-  {
-    realdata[i][0] = 1;
-    realdata[i][1] = 0;
-  }
-  return;
+    for(int i = 0; i<n3*md; i++)
+    {
+        realdata[i][0] = 1;
+        realdata[i][1] = 0;
+        hist_forward[i] = 1.;
+    }
+    return;
+}
+void Solver::init_data_backward()
+{
+    t = 0.;
+#pragma omp parallel for num_threads(NUM_THREADS)
+    for(int i = 0; i<n3*md; i++)
+    {
+        realdata[i][0] = 1;
+        realdata[i][1] = 0;
+        hist_backward[i] = 1.;
+    }
+    return;
 }
 Solver::~Solver()
 {
     if(count == 1){
         free(hist_forward);
-        //free(hist_backward);
+        if(!head_tail){
+            free(hist_backward);
+        }
         fftw_free(matrix);
         fftw_free(matrix1);
     }
     count --;
     free(phi);
     free(S[0]);
-    free(f);
+    free(dist);
 }
 
 static double t_const, t_fspace, t_grad, t_fso3, t_laplace,
@@ -520,25 +538,12 @@ void Solver::laplace(fftw_complex dt)
     return;
 }
 
-void Solver::solve_eqn(const double * field)
+void Solver::solve_eqn_forward(const double * field)
 {
-  init_data();
-
-#pragma omp parallel for num_threads(NUM_THREADS)
-  for(int j = 0; j<md*n3; j++)
-    hist_forward[j] = 1.;
-
   for(int i = 1; i<n_step+1; i++)
   {
-    //std::cout<<"before onestep: "<<timer()/60<<std::endl;
     onestep(field);
-    //std::cout<<"after onestep: "<<timer()/60<<std::endl;
     cblas_dcopy(md*n3,realdata[0],2,hist_forward+i*md*n3,1);
-/* #pragma omp parallel for num_threads(NUM_THREADS) */
-/*     for(int j = 0; j<md*n3; j++) */
-/*     { */
-/*       hist_forward[j+i*md*n3] = realdata[j][0]; */
-/*     } */
   }
 #ifdef STEP_TIME
   std::cout<<"const: "<<t_const<<",fspace: "<<t_fspace<<",grad: "<<t_grad 
@@ -547,11 +552,27 @@ void Solver::solve_eqn(const double * field)
   return;
 }
 
+void Solver::solve_eqn_backward(const double * field)
+{
+  for(int i = 1; i<n_step+1; i++)
+  {
+    onestep(field);
+    cblas_dcopy(md*n3,realdata[0],2,hist_backward+i*md*n3,1);
+  }
+#ifdef STEP_TIME
+  std::cout<<"const: "<<t_const<<",fspace: "<<t_fspace<<",grad: "<<t_grad 
+    <<",fso3: "<<t_fso3<<",laplace: "<<t_laplace<<",iso3: "<<t_iso3<<",ispace: "<<t_ispace<<std::endl;
+#endif
+  return;
+}
 void Solver::pdf()
 {
     double tmp;
-    tmp = dt*nA*2./(8.*M_PI*M_PI*Q);
-    double * func = f;
+    tmp = dt*2./(8.*M_PI*M_PI*Q);
+    double * func = dist;
+    if(head_tail){
+        hist_backward = hist_forward;
+    }
 
 #pragma omp parallel for num_threads(NUM_THREADS)
   for(int i = 0; i<md; i++)
@@ -561,34 +582,22 @@ void Solver::pdf()
         {
           int index = kk+n*k+j*n*n+i*n3;
           int index2 = (n-kk)%n+((n/2+k)%n)*n+(n-j-1)*n*n+i*n3;
-          func[index] = 3./8*(hist_forward[md*n3*n_step+index2]+hist_forward[md*n3*n_step+index]);
-          func[index] += 7./6*(hist_forward[md*n3*(n_step-1)+index2]*hist_forward[md*n3*1+index]
-              +hist_forward[md*n3*1+index2]*hist_forward[md*n3*(n_step-1)+index]);
-          func[index] += 23./24*(hist_forward[md*n3*(n_step-2)+index2]*hist_forward[md*n3*2+index]
-              +hist_forward[md*n3*2+index2]*hist_forward[md*n3*(n_step-2)+index]);
+          func[index] = 3./8*(hist_backward[md*n3*n_step+index2]+hist_forward[md*n3*n_step+index]);
+          func[index] += 7./6*(hist_backward[md*n3*(n_step-1)+index2]*hist_forward[md*n3*1+index]
+              +hist_backward[md*n3*1+index2]*hist_forward[md*n3*(n_step-1)+index]);
+          func[index] += 23./24*(hist_backward[md*n3*(n_step-2)+index2]*hist_forward[md*n3*2+index]
+              +hist_backward[md*n3*2+index2]*hist_forward[md*n3*(n_step-2)+index]);
           for(int ii = 3; ii<n_step-2; ii++)
           {
-            func[index] += hist_forward[md*n3*ii+index]*hist_forward[md*n3*(n_step-ii)+index2];
+            func[index] += hist_forward[md*n3*ii+index]*hist_backward[md*n3*(n_step-ii)+index2];
           }
           func[index] = func[index]*tmp;
         }
   return;
 }
 
-void Solver::density(const double * field)
+void Solver::density()
 {
-#ifdef OTH_TIME
-    std::cout<<"call density: "<<timer()/60<<std::endl;
-#endif
-    solve_eqn(field);
-#ifdef OTH_TIME
-    std::cout<<"solve eqn: "<<timer()/60<<std::endl;
-#endif
-    Q = ptnfn();
-    pdf();
-#ifdef OTH_TIME
-    std::cout<<"ptnfn and pdf: "<<timer()/60<<std::endl;
-#endif
 #pragma omp parallel for num_threads(NUM_THREADS)
     for(int i = 0; i<md; i++)
     {
@@ -600,8 +609,8 @@ void Solver::density(const double * field)
             double tmp3 =0;
             for(int k = 0; k<n*n; k++)
             {
-                tmp2 += f[k+j*n*n+i*n3];
-                tmp3 += f[k+j*n*n+i*n3];
+                tmp2 += dist[k+j*n*n+i*n3];
+                tmp3 += dist[k+j*n*n+i*n3];
             }
             tmp2 *= weights[j];
             tmp3 *= weights[j];
@@ -641,17 +650,17 @@ void Solver::tensor()
         for(int l = 0; l<n; l++){
           int index =l+ k*n+j*n*n+i*n3;
 
-          tmp[0] += f[index]*(m1*m1-1./3)*wt;
+          tmp[0] += dist[index]*(m1*m1-1./3)*wt;
 
-          tmp[1] += f[index]*(m2*m2-1./3)*wt;
+          tmp[1] += dist[index]*(m2*m2-1./3)*wt;
 
-          tmp[2] += f[index]*(m3*m3-1./3)*wt;
+          tmp[2] += dist[index]*(m3*m3-1./3)*wt;
 
-          tmp[3] += f[index]*m1*m2*wt;
+          tmp[3] += dist[index]*m1*m2*wt;
 
-          tmp[4] += f[index]*m1*m3*wt;
+          tmp[4] += dist[index]*m1*m3*wt;
 
-          tmp[5] += f[index]*m2*m3*wt;
+          tmp[5] += dist[index]*m2*m3*wt;
         }
       }
     }
@@ -665,9 +674,15 @@ void Solver::tensor()
 
 double Solver::ptnfn(int s)
 {
-  double q = 0;
-  double * ptr = hist_forward+md*n3*s;
-  double * ptr2 = hist_forward+md*n3*(n_step-s);
+    double q = 0;
+    double * ptr = hist_forward+md*n3*s;
+    double * ptr2;
+    if(head_tail){
+        ptr2 = hist_forward+md*n3*(n_step-s);
+    }else{
+        ptr2 = hist_backward+md*n3*(n_step-s);
+    }
+
   //double * ptr3 = hist_backward+md*n3*s;
   //double * ptr4 = hist_backward+md*n3*(n_step-s);
 #pragma omp parallel for num_threads(NUM_THREADS) reduction(+:q)
@@ -688,8 +703,8 @@ double Solver::ptnfn(int s)
     }
     q += tmp1;
   }
-  q = q*bw/(md*n3);
-  return q;
+  Q = q*bw/(md*n3);
+  return Q;
 }
 
 void Solver::save_data(std::string filename)

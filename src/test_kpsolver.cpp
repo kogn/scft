@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <cstdio>
 #include "kpsolver.h"
+#include "homogeneous.hpp"
 #include "Config.h"
 #include <cmath>
 
@@ -14,7 +15,7 @@ int main(int argc, char * argv[])
     }
     Config configSettings(argv[1]);
 
-    KPSolver test(configSettings);
+    Homogeneous<KPSolver> test(configSettings);
 
     double * field = (double *)malloc(sizeof(double)*test.md*2);
     double * mu= (double *)malloc(sizeof(double)*test.md*2);

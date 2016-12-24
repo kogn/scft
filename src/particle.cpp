@@ -12,7 +12,7 @@
 Particle::Particle(const Config & configSettings){
     m[0] = configSettings.Read<int>("Grid_Size_x");
     domain[0] = configSettings.Read<int>("domain0");
-    nB = configSettings.Read<double>("nB");
+    prop = configSettings.Read<double>("nB");
     if(DIM >= 2){
         m[1] = configSettings.Read<int>("Grid_Size_y");
         domain[1] = configSettings.Read<int>("domain1");
@@ -45,7 +45,7 @@ void Particle::density(const double * field){
     Q = q/md;
 #pragma omp parallel for num_threads(NUM_THREADS)
     for(int i = 0; i<md; i++){
-        phi[i] /= Q/nB;
+        phi[i] /= Q/prop;
     }
     return;
 }

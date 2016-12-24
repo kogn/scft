@@ -31,15 +31,15 @@ int KPSolver::count = 0;
 fftw_complex * KPSolver::matrix = NULL;
 fftw_complex * KPSolver::matrix1 = NULL;
 double * KPSolver::hist_forward = NULL;
+double * KPSolver::hist_backward = NULL;
 KPSolver::KPSolver(const Config & configSettings):
     S2_Space_trans(configSettings),S2_trans(configSettings),S2Data(configSettings)
 {
-    nA = configSettings.Read<double>("nA");
-    n_step = configSettings.Read<int>("Steps_on_chain");
+    f = configSettings.Read<double>("f_semiflexible");
+    n_step = configSettings.Read<int>("Steps_on_chain_semiflexible");
     alpha = configSettings.Read<double>("alpha");
     beta = configSettings.Read<double>("beta");
-    kappa = configSettings.Read<double>("kappa");
-    tau = configSettings.Read<double>("tau");
+    head_tail = configSettings.Read<int>("head_tail");
 
     phi = (double *) malloc(sizeof(double)*md);
     S[0] = (double *) malloc(sizeof(double)*md*6);
@@ -47,7 +47,7 @@ KPSolver::KPSolver(const Config & configSettings):
     {
         S[i] = S[0] + md*i;
     }
-    f = (double *)malloc(sizeof(double)*md*n2);
+    dist = (double *)malloc(sizeof(double)*md*n2);
     dt = 1./n_step;
     gamma[0][0] = 0.324396404020171225;
     gamma[0][1] = 0.134586272490806680;
@@ -56,10 +56,12 @@ KPSolver::KPSolver(const Config & configSettings):
     if(count == 0){
         matrix = (fftw_complex *)fftw_malloc(sizeof(fftw_complex)*totalCoeffs_so3(bw));
         matrix1 = (fftw_complex *)fftw_malloc(sizeof(fftw_complex)*totalCoeffs_so3(bw));
-        getmatrix(bw,alpha,beta,kappa,tau,gamma, dt,matrix,matrix1);
+        getmatrix(bw,alpha,beta,0.,0.,gamma, dt,matrix,matrix1);
         count ++;
         hist_forward = (double *) malloc(sizeof(double)*md*n2*(n_step+1));
-        //hist_backward= (double *) malloc(sizeof(double)*md*n2*(n_step+1));
+        if(!head_tail){
+            hist_backward= (double *) malloc(sizeof(double)*md*n2*(n_step+1));
+        }
     }
 
     domain[0] = configSettings.Read<double>("domain0");
@@ -71,7 +73,7 @@ KPSolver::KPSolver(const Config & configSettings):
     }
 }
 
-void KPSolver::init_data()
+void KPSolver::init_data_forward()
 {
     t = 0.;
 #pragma omp parallel for num_threads(NUM_THREADS)
@@ -79,22 +81,38 @@ void KPSolver::init_data()
     {
         realdata0[i] = 1;
         realdata1[i] = 0;
+        hist_forward[i] = 1.;
     }
     return;
 }
+void KPSolver::init_data_backward()
+{
+    t = 0.;
+#pragma omp parallel for num_threads(NUM_THREADS)
+    for(int i = 0; i<n2*md; i++)
+    {
+        realdata0[i] = 1;
+        realdata1[i] = 0;
+        hist_backward[i] = 1.;
+    }
+    return;
+}
+
 
 KPSolver::~KPSolver()
 {
     if(count == 1){
         free(hist_forward);
-        //free(hist_backward);
+        if(!head_tail){
+            free(hist_backward);
+        }
         fftw_free(matrix);
         fftw_free(matrix1);
     }
     count --;
     free(phi);
     free(S[0]);
-    free(f);
+    free(dist);
 }
 
 void KPSolver::onestep(const double * field)
@@ -282,34 +300,34 @@ void KPSolver::laplace(fftw_complex dt)
 }
 
 
-void KPSolver::solve_eqn(const double * field)
+void KPSolver::solve_eqn_forward(const double * field)
 {
-  init_data();
-
-#pragma omp parallel for num_threads(NUM_THREADS)
-  for(int j = 0; j<md*n2; j++)
-    hist_forward[j] = 1.;
-
   for(int i = 1; i<n_step+1; i++)
   {
     onestep(field);
     cblas_dcopy(md*n2,realdata0,1,hist_forward+i*md*n2,1);
-/* #pragma omp parallel for num_threads(NUM_THREADS) */
-/*     for(int j = 0; j<md*n2; j++) */
-/*     { */
-/*       hist_forward[j+i*md*n2] = realdata[j][0]; */
-/*     } */
   }
   return;
 }
 
-
+void KPSolver::solve_eqn_backward(const double * field)
+{
+  for(int i = 1; i<n_step+1; i++)
+  {
+    onestep(field);
+    cblas_dcopy(md*n2,realdata0,1,hist_backward+i*md*n2,1);
+  }
+  return;
+}
 
 void KPSolver::pdf()
 {
     double tmp;
-    tmp = dt*nA*2./(4.*M_PI*Q);
-    double * func = f;
+    tmp = dt*2./(4.*M_PI*Q);
+    double * func = dist;
+    if(head_tail){
+        hist_backward = hist_forward;
+    }
 
 #pragma omp parallel for num_threads(NUM_THREADS)
   for(int i = 0; i<md; i++)
@@ -318,25 +336,22 @@ void KPSolver::pdf()
         {
           int index = k+j*n+i*n2;
           int index2 = ((n/2+k)%n)+(n-j-1)*n+i*n2;
-          func[index] = 3./8*(hist_forward[md*n2*n_step+index2]+hist_forward[md*n2*n_step+index]);
-          func[index] += 7./6*(hist_forward[md*n2*(n_step-1)+index2]*hist_forward[md*n2*1+index]
-              +hist_forward[md*n2*1+index2]*hist_forward[md*n2*(n_step-1)+index]);
-          func[index] += 23./24*(hist_forward[md*n2*(n_step-2)+index2]*hist_forward[md*n2*2+index]
-              +hist_forward[md*n2*2+index2]*hist_forward[md*n2*(n_step-2)+index]);
+          func[index] = 3./8*(hist_backward[md*n2*n_step+index2]+hist_forward[md*n2*n_step+index]);
+          func[index] += 7./6*(hist_backward[md*n2*(n_step-1)+index2]*hist_forward[md*n2*1+index]
+              +hist_backward[md*n2*1+index2]*hist_forward[md*n2*(n_step-1)+index]);
+          func[index] += 23./24*(hist_backward[md*n2*(n_step-2)+index2]*hist_forward[md*n2*2+index]
+              +hist_backward[md*n2*2+index2]*hist_forward[md*n2*(n_step-2)+index]);
           for(int ii = 3; ii<n_step-2; ii++)
           {
-            func[index] += hist_forward[md*n2*ii+index]*hist_forward[md*n2*(n_step-ii)+index2];
+            func[index] += hist_forward[md*n2*ii+index]*hist_backward[md*n2*(n_step-ii)+index2];
           }
           func[index] = func[index]*tmp;
         }
   return;
 }
 
-void KPSolver::density(const double * field)
+void KPSolver::density()
 {
-    solve_eqn(field);
-    Q = ptnfn();
-    pdf();
 #pragma omp parallel for num_threads(NUM_THREADS)
     for(int i = 0; i<md; i++)
     {
@@ -348,8 +363,8 @@ void KPSolver::density(const double * field)
             double tmp3 =0;
             for(int k = 0; k<n; k++)
             {
-                tmp2 += f[k+j*n+i*n2];
-                tmp3 += f[k+j*n+i*n2];
+                tmp2 += dist[k+j*n+i*n2];
+                tmp3 += dist[k+j*n+i*n2];
             }
             tmp2 *= weights[j];
             tmp3 *= weights[j];
@@ -388,17 +403,17 @@ void KPSolver::tensor()
             double m3 = c1;
             int index =k+j*n+i*n2;
 
-            tmp[0] += f[index]*(m1*m1-1./3)*wt;
+            tmp[0] += dist[index]*(m1*m1-1./3)*wt;
 
-            tmp[1] += f[index]*(m2*m2-1./3)*wt;
+            tmp[1] += dist[index]*(m2*m2-1./3)*wt;
 
-            tmp[2] += f[index]*(m3*m3-1./3)*wt;
+            tmp[2] += dist[index]*(m3*m3-1./3)*wt;
 
-            tmp[3] += f[index]*m1*m2*wt;
+            tmp[3] += dist[index]*m1*m2*wt;
 
-            tmp[4] += f[index]*m1*m3*wt;
+            tmp[4] += dist[index]*m1*m3*wt;
 
-            tmp[5] += f[index]*m2*m3*wt;
+            tmp[5] += dist[index]*m2*m3*wt;
         }
     }
     for(int a = 0; a<6; a++)
@@ -411,10 +426,15 @@ void KPSolver::tensor()
 
 double KPSolver::ptnfn(int s)
 {
-  double q = 0;
-  double * ptr = hist_forward+md*n2*s;
-  double * ptr2 = hist_forward+md*n2*(n_step-s);
-  //double * ptr3 = hist_backward+md*n2*s;
+    double q = 0;
+    double * ptr = hist_forward+md*n2*s;
+    double * ptr2;
+    if(head_tail){
+        ptr2 = hist_forward+md*n2*(n_step-s);
+    }else{
+        ptr2 = hist_backward+md*n2*(n_step-s);
+    }
+    //double * ptr3 = hist_backward+md*n2*s;
   //double * ptr4 = hist_backward+md*n2*(n_step-s);
 #pragma omp parallel for num_threads(NUM_THREADS) reduction(+:q)
   for(int i = 0; i<md; i++)
@@ -431,8 +451,8 @@ double KPSolver::ptnfn(int s)
     }
     q += tmp1;
   }
-  q = q*bw/(md*n2);
-  return q;
+  Q = q*bw/(md*n2);
+  return Q;
 }
 
 void KPSolver::save_data(std::string filename)

@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <cstdio>
 #include "solver.h"
+#include "homogeneous.hpp"
 #include "Config.h"
 #include <cmath>
 
@@ -14,12 +15,12 @@ int main(int argc, char * argv[])
     }
     Config configSettings(argv[1]);
 
-    Solver test(configSettings);
+    Homogeneous<Solver> test(configSettings);
 
-    double * field = (double *)malloc(sizeof(double)*test.md*2);
-    double * mu= (double *)malloc(sizeof(double)*test.md*2);
+    double * field = (double *)malloc(sizeof(double)*test.A.md*2);
+    double * mu= (double *)malloc(sizeof(double)*test.A.md*2);
 
-    int md = test.md;
+    int md = test.A.md;
     if(DIM == 1)
     {
       for(int i = 0; i<md; i++)
@@ -32,18 +33,18 @@ int main(int argc, char * argv[])
     }
     if(DIM == 2)
     {
-      for(int i = 0; i<test.m[0]; i++)
-        for(int j = 0; j<test.m[1]; j++)
+      for(int i = 0; i<test.A.m[0]; i++)
+        for(int j = 0; j<test.A.m[1]; j++)
         {
-          mu[i*test.m[1]+j] = -2*cos(2*M_PI*i/test.m[0]) + 0.2*cos(2*M_PI*j/test.m[1]);
-          mu[i*test.m[1]+j+md] = -mu[i*test.m[1]+j];
-          field[i*test.m[1]+j] = mu[i*test.m[1]+j] - mu[i*test.m[1]+j+md];
-          field[i*test.m[1]+j+md] = mu[i*test.m[1]+j] + mu[i*test.m[1]+j+md];
+          mu[i*test.A.m[1]+j] = -2*cos(2*M_PI*i/test.A.m[0]) + 0.2*cos(2*M_PI*j/test.A.m[1]);
+          mu[i*test.A.m[1]+j+md] = -mu[i*test.A.m[1]+j];
+          field[i*test.A.m[1]+j] = mu[i*test.A.m[1]+j] - mu[i*test.A.m[1]+j+md];
+          field[i*test.A.m[1]+j+md] = mu[i*test.A.m[1]+j] + mu[i*test.A.m[1]+j+md];
         }
     }
     if(DIM == 3)
     {
-        int * m = test.m;
+        int * m = test.A.m;
         for(int i = 0; i<m[0]; i++)
             for(int j = 0; j<m[1]; j++)
                 for(int k = 0; k<m[2]; k++)
