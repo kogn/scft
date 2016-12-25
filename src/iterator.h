@@ -152,6 +152,7 @@ void Anderson::solve(T * ob,void (T::*func) (),double* y ,int n, int max_steps=2
     timer();
 
     do{
+        n_iters ++;
         std::cout<<"The "<<n_iters<<"th step:" <<std::endl;
         int n_mod = n_iters%mk;
         err = 0.;
@@ -187,7 +188,6 @@ void Anderson::solve(T * ob,void (T::*func) (),double* y ,int n, int max_steps=2
                 }
             }
         }
-        n_iters ++;
         std::cout<<"Time = "<< timer()/60.<<" min, " <<"error = "<< err <<std::endl;
         save_data(output_fileprefix+"Anderson_"+num2str(n_iters), y, n);
     }while(err > tolerance&&n_iters<max_steps);
