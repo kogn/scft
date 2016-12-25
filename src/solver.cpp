@@ -324,7 +324,7 @@ void Solver::onestep(const double * field)
 
 void Solver::constant(fftw_complex dt,const double * field)
 {
-#pragma omp parallel for num_threads(NUM_THREADS/2)
+#pragma omp parallel for num_threads(NUM_THREADS)
   for(int i = 0; i<md; i++)
   {
     double expw = exp(-field[i]*dt[0]);
@@ -491,7 +491,7 @@ void Solver::laplace(fftw_complex dt)
         ptr = matrix;
     else 
         ptr = matrix1;
-#pragma omp parallel for num_threads(NUM_THREADS/2)
+#pragma omp parallel for num_threads(NUM_THREADS)
     for(int i = 0; i<md; i++)
     {
         for(int l = 0; l<bw; l++)
