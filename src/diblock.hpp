@@ -36,7 +36,7 @@ class Diblock
         int n_step;
 
         double Q;
-        double prop;
+        //double prop;
         int * m;
         int md;
 
@@ -170,8 +170,8 @@ double Diblock<TA,TB>::ptnfn(int s)
     template<typename TA, typename TB>
 void Diblock<TA,TB>::save_data(std::string filename)
 {
-    A.save_data(filename);
-    B.save_data(filename);
+    A.save_data(filename+"_A");
+    B.save_data(filename+"_B");
     return;
 }
 #endif //__DIBLOCK_HPP__

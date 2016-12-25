@@ -183,7 +183,7 @@ void Anderson::solve(T * ob,void (T::*func) (),double* y ,int n, int max_steps=2
         }
         n_iters ++;
         std::cout<<"Time = "<< timer()/60.<<" min, " <<"error = "<< err <<std::endl;
-        save_data(output_fileprefix+"SteepD_"+num2str(n_iters), y, n);
+        save_data(output_fileprefix+"Anderson_"+num2str(n_iters), y, n);
     }while(err > eps&&n_iters<max_steps);
 
     free(x[0]);
