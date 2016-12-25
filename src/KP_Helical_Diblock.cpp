@@ -29,7 +29,9 @@ int main(int argc, char * argv[])
     std::string output_filename = configSettings.Read<std::string>("Output_filename");
     std::string param_filename= configSettings.Read<std::string>("Param_filename");
     int max_steps_SD = configSettings.Read<int>("Max_steps_SD");
+    double tolerance_SD= configSettings.Read<int>("Tolerance_SD");
     int max_steps_Ad = configSettings.Read<int>("Max_steps_Ad");
+    double tolerance_Ad= configSettings.Read<int>("Tolerance_Ad");
 
     typedef Diblock<Solver,KPSolver> TA;
 
@@ -54,10 +56,10 @@ int main(int argc, char * argv[])
 
 
     if(max_steps_SD>0){
-        sd.solve(obp,fp2,test.mu,test.dmu,test.md*2,max_steps_SD);
+        sd.solve(obp,fp2,test.mu,test.dmu,test.md*2,max_steps_SD,tolerance_SD);
     }
     if(max_steps_Ad>0){
-        ad.solve(obp,fp,test.field,test.md*2,max_steps_Ad);
+        ad.solve(obp,fp,test.field,test.md*2,max_steps_Ad,tolerance_Ad);
     }
     test.A.save_data(output_prefix+param_filename);
 
