@@ -29,9 +29,9 @@ int main(int argc, char * argv[])
     std::string output_filename = configSettings.Read<std::string>("Output_filename");
     std::string param_filename= configSettings.Read<std::string>("Param_filename");
     int max_steps_SD = configSettings.Read<int>("Max_steps_SD");
-    double tolerance_SD= configSettings.Read<int>("Tolerance_SD");
+    double tolerance_SD= configSettings.Read<double>("Tolerance_SD");
     int max_steps_Ad = configSettings.Read<int>("Max_steps_Ad");
-    double tolerance_Ad= configSettings.Read<int>("Tolerance_Ad");
+    double tolerance_Ad= configSettings.Read<double>("Tolerance_Ad");
 
     typedef Diblock<Solver,KPSolver> TA;
 
