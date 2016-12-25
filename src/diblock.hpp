@@ -54,7 +54,9 @@ void connect_bond_forward(KPSolver & A, Solver & B){
     for(int i = 0; i<A.md*A.n2; i++)
     {
         for(int l = 0; l<A.n; l++){
-            ptrA[i*A.n+l] = ptrA[i]/2./M_PI;
+            ptrB[i*A.n+l] = ptrA[i];
+            B.realdata[i*A.n+l][0] = ptrB[i*A.n+l];
+            B.realdata[i*A.n+l][1] = 0;
         }
     }
     return;
@@ -67,7 +69,9 @@ void connect_bond_backward(Solver & A, KPSolver & B){
     for(int i = 0; i<B.md*B.n2; i++)
     {
         for(int l = 0; l<B.n; l++){
-            ptrA[i*A.n+l] = ptrA[i]/2./M_PI;
+            ptrA[i*A.n+l] = ptrB[i];
+            A.realdata[i*A.n+l][0] = ptrA[i*A.n+l];
+            A.realdata[i*A.n+l][1] = 0;
         }
     }
     return;
@@ -83,15 +87,17 @@ void connect_bond_forward(Solver & A, KPSolver & B){
         for(int l = 0; l<A.n; l++){
             ptrB[i] += ptrA[i*A.n+l];
         }
-        ptrB[i] *= 2.*M_PI/A.n;
+        ptrB[i] /= A.n;
+        B.realdata0[i] = ptrB[i];
+        B.realdata1[i] = 0.;
     }
     return;
 }
 
 
 void connect_bond_backward(KPSolver& A, Solver & B){
-    double * ptrB = B.hist_forward+B.md*B.n3*B.n_step;
-    double * ptrA = A.hist_forward;
+    double * ptrB = B.hist_backward+B.md*B.n3*B.n_step;
+    double * ptrA = A.hist_backward;
 #pragma omp parallel for num_threads(NUM_THREADS)
     for(int i = 0; i<A.md*A.n2; i++)
     {
@@ -99,7 +105,9 @@ void connect_bond_backward(KPSolver& A, Solver & B){
         for(int l = 0; l<A.n; l++){
             ptrA[i] += ptrB[i*A.n+l];
         }
-        ptrA[i] *= 2.*M_PI/B.n;
+        ptrA[i] /= B.n;
+        A.realdata0[i] = ptrA[i];
+        A.realdata1[i] = 0.;
     }
     return;
 }
@@ -139,7 +147,7 @@ void Diblock<TA,TB>::pdf()
 void Diblock<TA,TB>::density(const double * field)
 {
     solve_eqn(field);
-    ptnfn();
+    ptnfn(n_step);
     pdf();
     A.density();
     B.density();

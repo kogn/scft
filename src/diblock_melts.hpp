@@ -23,7 +23,7 @@ extern "C" {
 #ifndef DIM 
 #define DIM 1
 #endif
-template<class TA, class TB>
+template<class TA>
 class Diblock_melts
 {
     public:
@@ -37,14 +37,11 @@ class Diblock_melts
         int md;
         int m[DIM];
         TA A;
-        TB B;
 
         void read_field(std::string);
         void read_mu(std::string);
     private:
         void print_info();
-
-        void quality();
 
         double energy();
         double H;
@@ -52,8 +49,8 @@ class Diblock_melts
 
 };
 
-    template<class TA, class TB>
-void Diblock_melts<TA,TB>::read_field(std::string s)
+    template<class TA>
+void Diblock_melts<TA>::read_field(std::string s)
 {
     std::ifstream file(s.c_str());
     for(int i = 0; i<md*2; i++)
@@ -67,8 +64,8 @@ void Diblock_melts<TA,TB>::read_field(std::string s)
     file.close();
     return;
 }
-    template<class TA, class TB>
-void Diblock_melts<TA,TB>::read_mu(std::string s)
+    template<class TA>
+void Diblock_melts<TA>::read_mu(std::string s)
 {
     std::ifstream file(s.c_str());
     for(int i = 0; i<md*2; i++)
@@ -82,9 +79,9 @@ void Diblock_melts<TA,TB>::read_mu(std::string s)
     file.close();
     return;
 }
-template<class TA, class TB>
-Diblock_melts<TA,TB>::Diblock_melts(const Config & configSettings):
-    A(configSettings),B(configSettings)
+template<class TA>
+Diblock_melts<TA>::Diblock_melts(const Config & configSettings):
+    A(configSettings)
 {
     chiN = configSettings.Read<double>("chiN");
     md = A.md;
@@ -133,14 +130,14 @@ Diblock_melts<TA,TB>::Diblock_melts(const Config & configSettings):
                 {
                     mu[i*m[1]*m[2]+j*m[2]+k] = -.2*cos(2*M_PI*i/m[0]) + 2*cos(2*M_PI*j/m[1]) + .2*cos(2*M_PI*k/m[2]);
                     mu[i*m[1]*m[2]+j*m[2]+k+md] = -mu[i*m[1]*m[2]+j*m[2]+k];
-                    field[i*m[1]*m[2]+j*m[2]+k] = mu[i*m[1]*m[2]+j*m[2]+k] - mu[i*m[1]*m[2]+j*m[2]+k+md];
-                    field[i*m[1]*m[2]+j*m[2]+k+md] = mu[i*m[1]*m[2]+j*m[2]+k] + mu[i*m[1]*m[2]+j*m[2]+k+md];
+                    field[i*m[1]*m[2]+j*m[2]+k+md] = mu[i*m[1]*m[2]+j*m[2]+k] - mu[i*m[1]*m[2]+j*m[2]+k+md];
+                    field[i*m[1]*m[2]+j*m[2]+k] = mu[i*m[1]*m[2]+j*m[2]+k] + mu[i*m[1]*m[2]+j*m[2]+k+md];
                 }
     }
 }
 
-    template<class TA, class TB>
-Diblock_melts<TA,TB>::~Diblock_melts()
+    template<class TA>
+Diblock_melts<TA>::~Diblock_melts()
 {
     free(mu);
     free(dmu);
@@ -148,18 +145,17 @@ Diblock_melts<TA,TB>::~Diblock_melts()
 }
 
 
-    template<class TA, class TB>
-void Diblock_melts<TA,TB>::update_field()
+    template<class TA>
+void Diblock_melts<TA>::update_field()
 {
     A.density(field);
-    B.density(field+md);
 #pragma omp parallel for num_threads(NUM_THREADS)
     for(int i = 0;i <md; i++)
     {
         double tmp;
         tmp = (field[i] + field[i+md] - chiN)*0.5;
-        field[i] = chiN*B.phi[i]+tmp;
-        field[i+md] = chiN*A.phi[i]+tmp;
+        field[i] = chiN*A.B.phi[i]+tmp;
+        field[i+md] = chiN*A.A.phi[i]+tmp;
         mu[i] = (field[i]+field[i+md])*0.5;
         mu[i+md] = (field[i+md]-field[i])*0.5;
     }
@@ -167,8 +163,8 @@ void Diblock_melts<TA,TB>::update_field()
     print_info();
     return;
 }
-    template<class TA, class TB>
-void Diblock_melts<TA, TB>::delta_mu()
+    template<class TA>
+void Diblock_melts<TA>::delta_mu()
 {
 #pragma omp parallel for num_threads(NUM_THREADS)
     for(int i = 0; i<md; i++)
@@ -177,20 +173,19 @@ void Diblock_melts<TA, TB>::delta_mu()
         field[i+md] = mu[i] + mu[i+md];
     }
     A.density(field);
-    B.density(field+md);
     double tmp;
 #pragma omp parallel for num_threads(NUM_THREADS)
     for(int i = 0; i<md; i++)
     {
-        dmu[i] = -(A.phi[i]+B.phi[i]-1.);
-        dmu[i+md]= B.phi[i] - A.phi[i] + 2*mu[i+md]/chiN;
+        dmu[i] = -(A.A.phi[i]+A.B.phi[i]-1.);
+        dmu[i+md]= A.B.phi[i] - A.A.phi[i] + 2*mu[i+md]/chiN;
     }
     energy();
     print_info();
     return;
 }
-    template<class TA, class TB>
-double Diblock_melts<TA,TB>::energy()
+    template<class TA>
+double Diblock_melts<TA>::energy()
 {
     H = 0;
     double h = 0;
@@ -200,23 +195,25 @@ double Diblock_melts<TA,TB>::energy()
         h += -mu[i] + mu[i+md]*mu[i+md]/chiN;
     }
     h /= md;
-    H = h- (log(A.Q)*A.prop + log(B.Q)*B.prop);
+    H = h - log(A.Q);
     return H;
 }
 
 
-    template<class TA, class TB>
-void Diblock_melts<TA,TB>::print_info()
+    template<class TA>
+void Diblock_melts<TA>::print_info()
 {
-    double quality= 0.;
-#pragma omp parallel for num_threads(NUM_THREADS) reduction(+:quality)
-    for(int i = 0; i<md; i++)
+    double quality_A= 0.;
+    double quality_B= 0.;
+//#pragma omp parallel for num_threads(NUM_THREADS) reduction(+:quality)
+    for(int i = 0; i<A.md; i++)
     {
-        quality += A.phi[i] + B.phi[i];
+        quality_A += A.A.phi[i];
+        quality_B += A.B.phi[i];
     }
-    quality /= md;
-    std::cout<<"Quality = "<<quality<<"; Q_A = "<<A.Q<<
-        "; Q_B = "<<B.Q<<"; H = "
+    quality_A /= A.md;
+    quality_B /= A.md;
+    std::cout<<"Quality = ("<<quality_A<<", "<<quality_B<<"); Q = "<<A.A.Q<<"; H = "
         <<H<<std::endl;
     return;
 }

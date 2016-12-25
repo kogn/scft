@@ -8,7 +8,6 @@ extern "C" {
 #endif //__cplusplus
 #include <fftw3.h>
 #include <lapacke.h>
-#include "matrix.h"
 #ifdef MKL
 #include <mkl_cblas.h>
 #else
@@ -28,8 +27,6 @@ extern "C" {
 #endif //__cplusplus
 
 int KPSolver::count = 0;
-fftw_complex * KPSolver::matrix = NULL;
-fftw_complex * KPSolver::matrix1 = NULL;
 double * KPSolver::hist_forward = NULL;
 double * KPSolver::hist_backward = NULL;
 KPSolver::KPSolver(const Config & configSettings):
@@ -37,8 +34,7 @@ KPSolver::KPSolver(const Config & configSettings):
 {
     f = configSettings.Read<double>("f_semiflexible");
     n_step = configSettings.Read<int>("Steps_on_chain_semiflexible");
-    alpha = configSettings.Read<double>("alpha");
-    beta = configSettings.Read<double>("beta");
+    lambda = configSettings.Read<double>("lambda");
     head_tail = configSettings.Read<int>("head_tail");
 
     phi = (double *) malloc(sizeof(double)*md);
@@ -48,15 +44,12 @@ KPSolver::KPSolver(const Config & configSettings):
         S[i] = S[0] + md*i;
     }
     dist = (double *)malloc(sizeof(double)*md*n2);
-    dt = 1./n_step;
+    dt = f/n_step;
     gamma[0][0] = 0.324396404020171225;
     gamma[0][1] = 0.134586272490806680;
     gamma[1][0] = 0.351207191959657661;
     gamma[1][1] = -0.269172544981613415;
     if(count == 0){
-        matrix = (fftw_complex *)fftw_malloc(sizeof(fftw_complex)*totalCoeffs_so3(bw));
-        matrix1 = (fftw_complex *)fftw_malloc(sizeof(fftw_complex)*totalCoeffs_so3(bw));
-        getmatrix(bw,alpha,beta,0.,0.,gamma, dt,matrix,matrix1);
         count ++;
         hist_forward = (double *) malloc(sizeof(double)*md*n2*(n_step+1));
         if(!head_tail){
@@ -106,8 +99,6 @@ KPSolver::~KPSolver()
         if(!head_tail){
             free(hist_backward);
         }
-        fftw_free(matrix);
-        fftw_free(matrix1);
     }
     count --;
     free(phi);
@@ -278,24 +269,22 @@ void KPSolver::gradient(fftw_complex dt)
 
 void KPSolver::laplace(fftw_complex dt)
 {
-    fftw_complex * ptr;
-    if(dt[1] > 0)
-        ptr = matrix;
-    else 
-        ptr = matrix1;
 #pragma omp parallel for num_threads(NUM_THREADS)
     for(int i = 0; i<md; i++)
         for(int l = 0; l<bw; l++)
+        {
+            double ex = exp(-dt[0]/2./lambda*l*(l+1));
+            double re = cos(-dt[1]/2./lambda*l*(l+1)) * ex;
+            double im = sin(-dt[1]/2./lambda*l*(l+1)) * ex;
             for(int j = -l; j<=l; j++)
             {
-                int number = totalCoeffs_so3(l);
-                int index = number+(j+l)*(2*l+1)+j+l;
                 int index2 = n_coeff*i + seanindex(j,l,bw);
-                spectdata0[index2]=ptr[index][0]*spectdata0[index2]
-                    -ptr[index][1]*spectdata1[index2];
-                spectdata1[index2]=ptr[index][0]*spectdata1[index2]
-                    +ptr[index][1]*spectdata0[index2];
+                spectdata0[index2]=re*spectdata0[index2]
+                    -im*spectdata1[index2];
+                spectdata1[index2]=re*spectdata1[index2]
+                    +im*spectdata0[index2];
             }
+        }
     return;
 }
 

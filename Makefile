@@ -4,10 +4,10 @@ DIM=3
 OTH_TIME=0
 STEP_TIME=0
 
-INTEL_DIR= /home/xdkong/intel/
-MATHEMATICA_DIR= /home/xdkong/local/Wolfram/Mathematica/10.3/
-OPENBLAS_DIR = /home/xdkong/local/openblas/
-FFTW_DIR = /home/xdkong/local/fftw3/
+INTEL_DIR= /opt/intel/
+MATHEMATICA_DIR= /usr/local/Wolfram/Mathematica/10.3/
+OPENBLAS_DIR = /home/kong/local/openblas/
+FFTW_DIR = /home/kong/local/fftw3/
 SRCDIR=./src/
 OBJDIR=./obj/
 CC = gcc 
@@ -35,7 +35,8 @@ CFLAGS+=$(OPTS)
 .PHONY: clean all
 
 VPATH=./src/
-EXEC = test_solver test_trans main test_config test_s2trans test_kpsolver test_diblock_solver
+EXEC = test_solver test_trans main test_config test_s2trans test_kpsolver test_diblock_solver \
+	   KP_Helical_Diblock
 all: obj data $(EXEC)
 
 #LDFLAGS += -llapacke -lsoft1 -ls2kit
@@ -63,6 +64,10 @@ LDFLAGS += -lWSTP64i4 -lrt  -ldl -luuid  -lm
 OBJS = $(patsubst %.c,%.o,$(addprefix $(OBJDIR), $(notdir $(wildcard $(SRCDIR)*.c))))
 OBJS += $(patsubst %.cpp,%.o,$(addprefix $(OBJDIR), $(notdir $(wildcard $(SRCDIR)*.cpp))))
 DEPS = $(wildcard $(SRCDIR)*.h $(SRCDIR)*.hpp) Makefile
+
+
+KP_Helical_Diblock: $(filter-out $(addprefix $(OBJDIR),$(filter-out KP_Helical_Diblock.o,$(addsuffix .o,$(EXEC)))),$(OBJS))
+	$(CXX) $(COMMON) $(CFLAGS) $^ $(LIB) $(LDFLAGS) -o $@ 
 
 test_diblock_solver: $(filter-out $(addprefix $(OBJDIR),$(filter-out test_diblock_solver.o,$(addsuffix .o,$(EXEC)))),$(OBJS))
 	$(CXX) $(COMMON) $(CFLAGS) $^ $(LIB) $(LDFLAGS) -o $@ 

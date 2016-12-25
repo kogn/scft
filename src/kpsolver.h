@@ -47,14 +47,12 @@ class KPSolver : public S2_Space_trans, public S2_trans
     private:
         static int count;
 
-        double alpha, beta;
+        double lambda;
         fftw_complex gamma[2];
 
         double volume;
         double domain[DIM];
 
-        static fftw_complex * matrix;
-        static fftw_complex * matrix1;
 
         void tensor();
 

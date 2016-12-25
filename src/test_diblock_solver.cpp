@@ -16,7 +16,7 @@ int main(int argc, char * argv[])
     }
     Config configSettings(argv[1]);
 
-    Diblock<Solver,KPSolver> test(configSettings);
+    Diblock<KPSolver,Solver> test(configSettings);
 
     double * field = (double *)malloc(sizeof(double)*test.A.md*2);
     double * mu= (double *)malloc(sizeof(double)*test.A.md*2);

@@ -3,11 +3,10 @@
 #include <cstdio>
 #include <string>
 #include "Config.h"
-#include "particle.h"
-#include "homogeneous.hpp"
 #include "solver.h"
 #include "kpsolver.h"
-#include "blends.hpp"
+#include "diblock.hpp"
+#include "diblock_melts.hpp"
 #include "iterator.h"
 
 #ifndef DIM
@@ -30,19 +29,17 @@ int main(int argc, char * argv[])
     std::string param_filename= configSettings.Read<std::string>("Param_filename");
     int max_steps = configSettings.Read<int>("Max_steps");
 
-    typedef Homogeneous<Solver> TA;
-    typedef Particle TB;
+    typedef Diblock<KPSolver,Solver> TA;
 
-
-    void (Iterator<TA,TB>::*fp)();
-    void (Iterator<TA,TB>::*fp2)();
-    fp = &Iterator<TA,TB>::update_field;
-    fp2 = &Iterator<TA,TB>::delta_mu;
-    Iterator<TA,TB> test(configSettings);
-    Iterator<TA,TB> * obp=&test;
+    void (Diblock_melts<TA>::*fp)();
+    void (Diblock_melts<TA>::*fp2)();
+    fp = &Diblock_melts<TA>::update_field;
+    fp2 = &Diblock_melts<TA>::delta_mu;
+    Diblock_melts<TA> test(configSettings);
+    Diblock_melts<TA> * obp=&test;
 
     //test.read_mu(input_filedir+input_filename);
-    test.read_field(input_filedir+input_filename);
+    //test.read_field(input_filedir+input_filename);
 
     Picard pc;
     SteepD sd(output_filedir+output_filename);
