@@ -33,6 +33,8 @@ class Anderson
         Anderson(std::string s);
         template<class T>
             void solve(T * ob,void (T::*func) (),double* ,int, int);
+        template<class T>
+            void solve(T * ob,void (T::*func) (),double* ,int, int,double);
     private:
         double alpha;
         bool stop();
@@ -46,6 +48,8 @@ class Picard
         Picard();
         template<class T>
             void solve(T * ob,void (T::*func) (), double *, int, int);
+        template<class T>
+            void solve(T * ob,void (T::*func) (), double *, int, int, double);
     private:
         double alpha;
         double eps;
@@ -60,6 +64,8 @@ class SteepD
         SteepD(std::string s);
         template<class T>
             void solve(T * ob,void (T::*func) (),double*, double *, int,int);
+        template<class T>
+            void solve(T * ob,void (T::*func) (),double*, double *, int,int,double);
     private:
         double steplength;
         double eps;
@@ -73,7 +79,7 @@ static std::string num2str(int i)
 }
 
     template<class T>
-void SteepD::solve(T * ob,void (T::*func) (),double*x, double *dx, int n, int max_steps=200)
+void SteepD::solve(T * ob,void (T::*func) (),double*x, double *dx, int n, int max_steps=200, double tolerance =1e-4)
 {
     int n_iters = 0;
     double err;
@@ -94,12 +100,12 @@ void SteepD::solve(T * ob,void (T::*func) (),double*x, double *dx, int n, int ma
         err = sqrt(err/n);
         std::cout<<"Time = "<< timer()/60.<<" min, " <<"error = "<< err <<std::endl;
         save_data(output_fileprefix+"SteepD_"+num2str(n_iters), x, n);
-    }while(err > eps && n_iters < max_steps);
+    }while(err > tolerance&& n_iters < max_steps);
     return;
 }
 
     template<class T>
-void Picard::solve(T * ob, void (T::*func)(), double * x, int n, int max_steps=200)
+void Picard::solve(T * ob, void (T::*func)(), double * x, int n, int max_steps=200, double tolerance = 1e-4)
 {
     int n_iters = 0;
     double * xcp = (double *)malloc(sizeof(double)*n);
@@ -119,13 +125,13 @@ void Picard::solve(T * ob, void (T::*func)(), double * x, int n, int max_steps=2
         err = sqrt(err/n);
         n_iters ++;
         std::cout<<"The "<<n_iters<<"th step, "<<"error = "<< err <<std::endl;
-    }while(n_iters<=max_steps&&err>eps);
+    }while(n_iters<=max_steps&&err>tolerance);
     free(xcp);
     return;
 }
 
     template<class T>
-void Anderson::solve(T * ob,void (T::*func) (),double* y ,int n, int max_steps=200)
+void Anderson::solve(T * ob,void (T::*func) (),double* y ,int n, int max_steps=200, double tolerance = 1e-4)
 {
     int n_iters = 0;
     double err;
@@ -146,6 +152,7 @@ void Anderson::solve(T * ob,void (T::*func) (),double* y ,int n, int max_steps=2
     timer();
 
     do{
+        n_iters ++;
         std::cout<<"The "<<n_iters<<"th step:" <<std::endl;
         int n_mod = n_iters%mk;
         err = 0.;
@@ -181,10 +188,9 @@ void Anderson::solve(T * ob,void (T::*func) (),double* y ,int n, int max_steps=2
                 }
             }
         }
-        n_iters ++;
         std::cout<<"Time = "<< timer()/60.<<" min, " <<"error = "<< err <<std::endl;
         save_data(output_fileprefix+"Anderson_"+num2str(n_iters), y, n);
-    }while(err > eps&&n_iters<max_steps);
+    }while(err > tolerance&&n_iters<max_steps);
 
     free(x[0]);
     free(g[0]);
