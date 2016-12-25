@@ -12,3 +12,5 @@ scft.kdev4
 test_kpsolver
 test_s2trans
 callgrind.out.*
+test_diblock_solver
+KP_Helical_Diblock
