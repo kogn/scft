@@ -57,6 +57,7 @@ Solver::Solver(const Config & configSettings):
         S[i] = S[0] + md*i;
     }
     dist = (double *)malloc(sizeof(double)*md*n3);
+    dists = (double *)malloc(sizeof(double)*md*(n_step+1));
     dt = f/n_step;
     gamma[0][0] = 0.324396404020171225;
     gamma[0][1] = 0.134586272490806680;
@@ -125,6 +126,7 @@ Solver::~Solver()
     free(phi);
     free(S[0]);
     free(dist);
+    free(dists);
 }
 
 static double t_const, t_fspace, t_grad, t_fso3, t_laplace,
@@ -567,6 +569,7 @@ void Solver::solve_eqn_backward(const double * field)
 }
 void Solver::pdf()
 {
+    pdfs();
     double tmp;
     tmp = dt*2./(8.*M_PI*M_PI*Q);
     double * func = dist;
@@ -582,46 +585,95 @@ void Solver::pdf()
         {
           int index = kk+n*k+j*n*n+i*n3;
           int index2 = (n-kk)%n+((n/2+k)%n)*n+(n-j-1)*n*n+i*n3;
-          func[index] = 3./8*(hist_backward[md*n3*n_step+index2]+hist_forward[md*n3*n_step+index]);
-          func[index] += 7./6*(hist_backward[md*n3*(n_step-1)+index2]*hist_forward[md*n3*1+index]
+
+          long double tmp1 = 0.;
+          tmp1 = 3./8*(hist_backward[md*n3*n_step+index2]+hist_forward[md*n3*n_step+index]);
+          tmp1 += 7./6*(hist_backward[md*n3*(n_step-1)+index2]*hist_forward[md*n3*1+index]
               +hist_backward[md*n3*1+index2]*hist_forward[md*n3*(n_step-1)+index]);
-          func[index] += 23./24*(hist_backward[md*n3*(n_step-2)+index2]*hist_forward[md*n3*2+index]
+          tmp1 += 23./24*(hist_backward[md*n3*(n_step-2)+index2]*hist_forward[md*n3*2+index]
               +hist_backward[md*n3*2+index2]*hist_forward[md*n3*(n_step-2)+index]);
           for(int ii = 3; ii<n_step-2; ii++)
           {
-            func[index] += hist_forward[md*n3*ii+index]*hist_backward[md*n3*(n_step-ii)+index2];
+            tmp1 += hist_forward[md*n3*ii+index]*hist_backward[md*n3*(n_step-ii)+index2];
           }
-          func[index] = func[index]*tmp;
+          func[index]=tmp*tmp1;
         }
   return;
 }
 
+void Solver::pdfs()
+{
+    //double factor = 2./(8.*M_PI*M_PI*Q);
+    if(head_tail){
+        hist_backward = hist_forward;
+    }
+
+#pragma omp parallel for num_threads(NUM_THREADS)
+    for(int i = 0; i<md; i++)
+        for(int ii = 0; ii<=n_step; ii++)
+        {
+            double tmp=0;
+            for(int j = 0; j<n; j++)
+            {
+                double tmp2=0;
+                for(int k = 0; k<n; k++)
+                    for(int kk = 0; kk<n; kk++)
+                    {
+                        int index = kk+n*k+j*n*n+i*n3;
+                        int index2 = (n-kk)%n+((n/2+k)%n)*n+(n-j-1)*n*n+i*n3;
+                        tmp2 += hist_forward[md*n3*ii+index]*hist_backward[md*n3*(n_step-ii)+index2];
+                        //tmp2 += ptr[kk+n*k+j*n*n+i*n3]*ptr2[(n-kk)%n+((n/2+k)%n)*n+(n-j-1)*n*n+i*n3];
+                    }
+                tmp += tmp2 * weights[j];
+            }
+            dists[ii*md+i] = tmp * bw/Q/n3;
+        }
+    return;
+}
 void Solver::density()
 {
 #pragma omp parallel for num_threads(NUM_THREADS)
-    for(int i = 0; i<md; i++)
-    {
-        double tmp=0;
-        double tmp1 = 0;
-        for(int j = 0; j<n; j++)
+    for(int i = 0; i<md; i++){
+
+        long double tmp1 = 0.;
+        tmp1 = 3./8*(dists[md*n_step +i] + dists[md*0+i]);
+        tmp1 += 7./6*(dists[md*(n_step-1)+i] + dists[md*1+i]);
+        tmp1 += 23./24*(dists[md*(n_step-2)+i] + dists[md*2+i]);
+        for(int ii = 3; ii<n_step-2; ii++)
         {
-            double tmp2=0;
-            double tmp3 =0;
-            for(int k = 0; k<n*n; k++)
-            {
-                tmp2 += dist[k+j*n*n+i*n3];
-                tmp3 += dist[k+j*n*n+i*n3];
-            }
-            tmp2 *= weights[j];
-            tmp3 *= weights[j];
-            tmp += tmp2;
-      tmp1 += tmp3;
+            tmp1 += dists[md*ii+i];
+        }
+        phi[i]=tmp1 * dt;
     }
-    phi[i] = tmp * 4.*bw*M_PI*M_PI/n3;
-    phi[i] = tmp1 * 4.*bw*M_PI*M_PI/n3;
-  }
-  return;
+    return;
 }
+
+/* void Solver::density() */
+/* { */
+/* #pragma omp parallel for num_threads(NUM_THREADS) */
+/*     for(int i = 0; i<md; i++) */
+/*     { */
+/*         double tmp=0; */
+/*         //double tmp1 = 0; */
+/*         for(int j = 0; j<n; j++) */
+/*         { */
+/*             double tmp2=0; */
+/*             double tmp3 =0; */
+/*             for(int k = 0; k<n*n; k++) */
+/*             { */
+/*                 tmp2 += dist[k+j*n*n+i*n3]; */
+/*                 //tmp3 += dist[k+j*n*n+i*n3]; */
+/*             } */
+/*             tmp2 *= weights[j]; */
+/*             //tmp3 *= weights[j]; */
+/*             tmp += tmp2; */
+/*             //tmp1 += tmp3; */
+/*         } */
+/*         phi[i] = tmp * 4.*bw*M_PI*M_PI/n3; */
+/*         //phi[i] = tmp1 * 4.*bw*M_PI*M_PI/n3; */
+/*     } */
+/*     return; */
+/* } */
 
 void Solver::tensor()
 {

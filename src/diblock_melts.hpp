@@ -213,8 +213,35 @@ void Diblock_melts<TA>::print_info()
     }
     quality_A /= A.md;
     quality_B /= A.md;
-    std::cout<<"Quality = ("<<quality_A<<", "<<quality_B<<"); Q = "<<A.A.Q<<"; H = "
+
+    /* double maxQA = 0; */
+    /* double minQA = 1000; */
+    /* double sumQA = 0; */
+    /* for(int i = 0; i<=A.A.n_step; i++){ */
+    /*     //std::cout<<A.A.ptnfn(i)<<std::endl; */
+    /*     A.A.ptnfn(i); */
+    /*     sumQA += A.A.Q; */
+    /*     maxQA = A.A.Q > maxQA ? A.A.Q:maxQA; */
+    /*     minQA = A.A.Q < minQA? A.A.Q:minQA; */
+    /* } */
+    /* sumQA /= (A.A.n_step+1)*A.A.Q; */
+
+    /* double maxQB = 0; */
+    /* double minQB = 1e100; */
+    /* double sumQB = 0; */
+    /* for(int i = 0; i<=A.B.n_step; i++){ */
+    /*     //std::cout<<A.B.ptnfn(i)<<std::endl; */
+    /*     A.B.ptnfn(i); */
+    /*     sumQB += A.B.Q; */
+    /*     maxQB = A.B.Q > maxQB ? A.B.Q:maxQB; */
+    /*     minQB = A.B.Q < minQB? A.B.Q:minQB; */
+    /* } */
+    /* sumQB /= (A.B.n_step+1)*A.B.Q; */
+    std::cout<<"Quality = ("<<quality_A<<", "<<quality_B<<"); Q = "<<A.Q<<"; H = "
         <<H<<std::endl;
+
+    /* std::cout<<"Quality = ("<<quality_A<<", "<<quality_B<<"); Q = ("<<A.A.ptnfn(0)<<", " */
+    /*     <<A.A.ptnfn(A.A.n_step)<<", "<<A.B.ptnfn(0)<<", "<<A.B.ptnfn(A.B.n_step)<<"); H = " */
     return;
 }
 

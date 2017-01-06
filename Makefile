@@ -1,6 +1,6 @@
-DEBUG = 0
+DEBUG = 1
 MKL=0
-DIM=3
+DIM=2
 OTH_TIME=0
 STEP_TIME=0
 
@@ -17,7 +17,7 @@ OPTS=-O3
 LDFLAGS=
 LIB= -L ../lib/
 COMMON=  -I ../include/
-CFLAGS=  -DNUM_THREADS=8 -DDIM=${DIM} -fopenmp
+CFLAGS=  -DNUM_THREADS=1 -DDIM=${DIM} -fopenmp
 
 ifeq ($(STEP_TIME), 1)
   CFLAGS += -DSTEP_TIME
