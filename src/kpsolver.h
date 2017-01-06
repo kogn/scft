@@ -31,6 +31,7 @@ class KPSolver : public S2_Space_trans, public S2_trans
         void init_data_backward();
         void density();
         void pdf();
+        void pdfs();
         void solve_eqn_forward(const double *);
         void solve_eqn_backward(const double *);
         /* template<typename TA, typename TB> */
@@ -42,6 +43,7 @@ class KPSolver : public S2_Space_trans, public S2_trans
         double * phi;
         double * S[6];
         double * dist;
+        double * dists;
         static double * hist_forward;
         static double * hist_backward;
     private:

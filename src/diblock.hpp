@@ -147,7 +147,7 @@ void Diblock<TA,TB>::pdf()
 void Diblock<TA,TB>::density(const double * field)
 {
     solve_eqn(field);
-    ptnfn(n_step);
+    ptnfn();
     pdf();
     A.density();
     B.density();
