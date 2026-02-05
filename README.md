@@ -47,10 +47,10 @@ System requirements:
    DIM = 2          # Set dimension: 1 or 2
    ```
 
-2. **Set library paths**:
+2. **Set library paths** (update version numbers to match your installation):
    ```makefile
    INTEL_DIR = /usr/local/intel/
-   MATHEMATICA_DIR = /usr/local/Wolfram/Mathematica/10.3/
+   MATHEMATICA_DIR = /usr/local/Wolfram/Mathematica/<version>/
    ```
 
 3. **Build all executables**:
@@ -146,7 +146,7 @@ The solver implements the standard SCFT algorithm:
 
 For theoretical background on Self-Consistent Field Theory:
 - Fredrickson, G. H. "The Equilibrium Theory of Inhomogeneous Polymers" (2006)
-- Matsen, M. W. "The standard Gaussian model for block copolymer melting" (2002)
+- Matsen, M. W. "The standard Gaussian model for block copolymer melts" (2002)
 
 ---
 
@@ -193,10 +193,10 @@ For theoretical background on Self-Consistent Field Theory:
    DIM = 2          # 设置维度：1或2
    ```
 
-2. **设置库路径**：
+2. **设置库路径**（更新版本号以匹配您的安装）：
    ```makefile
    INTEL_DIR = /usr/local/intel/
-   MATHEMATICA_DIR = /usr/local/Wolfram/Mathematica/10.3/
+   MATHEMATICA_DIR = /usr/local/Wolfram/Mathematica/<version>/
    ```
 
 3. **构建所有可执行文件**：
@@ -292,4 +292,4 @@ scft/
 
 关于自洽场理论的理论背景：
 - Fredrickson, G. H. "The Equilibrium Theory of Inhomogeneous Polymers" (2006)
-- Matsen, M. W. "The standard Gaussian model for block copolymer melting" (2002)
+- Matsen, M. W. "The standard Gaussian model for block copolymer melts" (2002)
